@@ -318,21 +318,45 @@ export function parseSallaWebhook(payload: Record<string, unknown>): {
 }
 
 /**
- * Verify Salla webhook signature
+ * Verify Salla webhook signature using Web Crypto API
  */
-export function verifySallaWebhook(
+export async function verifySallaWebhook(
   payload: string,
   signature: string,
   secret: string
-): boolean {
-  const crypto = require("crypto");
-  const expectedSignature = crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex");
+): Promise<boolean> {
+  const encoder = new TextEncoder();
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expectedSignature)
+  // Import the secret key
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
   );
+
+  // Sign the payload
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(payload)
+  );
+
+  // Convert to hex
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  // Timing-safe comparison
+  if (signature.length !== expectedSignature.length) {
+    return false;
+  }
+
+  let result = 0;
+  for (let i = 0; i < signature.length; i++) {
+    result |= signature.charCodeAt(i) ^ expectedSignature.charCodeAt(i);
+  }
+
+  return result === 0;
 }

@@ -4,6 +4,8 @@ import { decryptAsync, encryptAsync } from "@/lib/encryption";
 import { SnapchatAdsClient } from "@/lib/integrations/snapchat";
 import { IntegrationError } from "@/lib/integrations/base";
 
+export const runtime = "edge";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = require("@/convex/_generated/api").api as any;
 

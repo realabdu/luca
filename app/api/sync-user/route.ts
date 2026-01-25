@@ -2,6 +2,8 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { ConvexHttpClient } from "convex/browser";
 import { NextResponse } from "next/server";
 
+export const runtime = "edge";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = require("@/convex/_generated/api").api as any;
 

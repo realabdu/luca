@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { AttributionEngine, ATTRIBUTION_WINDOWS, AttributionWindow } from "@/lib/attribution/engine";
 
+export const runtime = "edge";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = require("@/convex/_generated/api").api as any;
 

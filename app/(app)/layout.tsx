@@ -4,6 +4,7 @@ import OnboardingRedirect from "@/components/OnboardingRedirect";
 
 // Prevent static generation - these pages require Clerk auth at runtime
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 export default function DashboardLayout({
   children,

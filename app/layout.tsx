@@ -5,6 +5,7 @@ import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 
 // Prevent static generation - app requires Clerk auth at runtime
 export const dynamic = "force-dynamic";
+export const runtime = "edge";
 
 const inter = Inter({
   variable: "--font-inter",

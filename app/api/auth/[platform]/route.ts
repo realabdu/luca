@@ -7,6 +7,8 @@ import {
   IntegrationPlatform,
 } from "@/types/integrations";
 
+export const runtime = "edge";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = require("@/convex/_generated/api").api as any;
 

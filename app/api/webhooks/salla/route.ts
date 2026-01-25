@@ -5,6 +5,8 @@ import {
 } from "@/lib/integrations/salla";
 import { ConvexHttpClient } from "convex/browser";
 
+export const runtime = "edge";
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const api = require("@/convex/_generated/api").api as any;
 
@@ -44,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature
     const webhookSecret = process.env.SALLA_WEBHOOK_SECRET;
     if (webhookSecret && signature) {
-      const isValid = verifySallaWebhook(rawBody, signature, webhookSecret);
+      const isValid = await verifySallaWebhook(rawBody, signature, webhookSecret);
       if (!isValid) {
         console.error("Invalid Salla webhook signature");
         return NextResponse.json(

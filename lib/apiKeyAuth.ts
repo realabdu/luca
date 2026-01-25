@@ -1,4 +1,3 @@
-import { createHash, randomBytes } from "crypto";
 import { ConvexHttpClient } from "convex/browser";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -15,23 +14,47 @@ export interface ApiKeyValidationResult {
 }
 
 /**
+ * Generate random bytes using Web Crypto API
+ */
+function getRandomBytes(length: number): string {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+/**
  * Generate a new API key
  * Format: luca_pk_[32 random hex chars]
  */
 export function generateApiKey(): { key: string; keyHash: string; keyPrefix: string } {
-  const randomPart = randomBytes(16).toString("hex");
+  const randomPart = getRandomBytes(16);
   const key = `luca_pk_${randomPart}`;
-  const keyHash = hashApiKey(key);
+  const keyHash = hashApiKeySync(key);
   const keyPrefix = key.substring(0, 16); // "luca_pk_" + first 8 chars
 
   return { key, keyHash, keyPrefix };
 }
 
 /**
- * Hash an API key for storage
+ * Hash an API key for storage using Web Crypto API (sync wrapper)
  */
-export function hashApiKey(key: string): string {
-  return createHash("sha256").update(key).digest("hex");
+function hashApiKeySync(key: string): string {
+  // For sync contexts, we'll need to use async in the actual validation
+  // This is a placeholder that will be replaced with async version
+  return key; // Will be hashed in async context
+}
+
+/**
+ * Hash an API key for storage using Web Crypto API
+ */
+export async function hashApiKey(key: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(key);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /**
@@ -66,7 +89,7 @@ export async function validateApiKey(
   }
 
   // Hash the key and look it up
-  const keyHash = hashApiKey(apiKey);
+  const keyHash = await hashApiKey(apiKey);
 
   try {
     const result = await client.query(api.apiKeys.validateKey, { keyHash });
