@@ -1,8 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: "standalone",
+  // Note: Do NOT use output: "standalone" with Cloudflare Pages
+  // @cloudflare/next-on-pages handles the build output
   images: {
-    // Disable image optimization for Cloudflare Edge
     unoptimized: true,
   },
 };
