@@ -1,3 +1,10 @@
 name = "luca"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_c2V0LWNhbGYtNzcuY2xlcmsuYWNjb3VudHMuZGV2JA"
+NEXT_PUBLIC_CONVEX_URL = "https://reliable-ibex-927.convex.cloud"
+NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
+NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"
+NEXT_PUBLIC_APP_URL = "https://lucaserv.com"
