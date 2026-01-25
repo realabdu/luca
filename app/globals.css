@@ -38,9 +38,9 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
-  --font-sans: var(--font-inter), 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: var(--font-manrope), 'Manrope', sans-serif;
-  --font-mono: var(--font-jetbrains-mono), 'Fira Code', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Manrope', sans-serif;
+  --font-mono: 'Fira Code', monospace;
 
   --radius: 0rem; /* Square aesthetic */
 
