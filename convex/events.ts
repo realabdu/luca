@@ -9,7 +9,8 @@ const sourceValidator = v.union(
   v.literal("Snapchat"),
   v.literal("X"),
   v.literal("Klaviyo"),
-  v.literal("salla")
+  v.literal("salla"),
+  v.literal("shopify")
 );
 
 const eventTypeValidator = v.union(

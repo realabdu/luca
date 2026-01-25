@@ -5,6 +5,7 @@ import { Id } from "./_generated/dataModel";
 
 const platformValidator = v.union(
   v.literal("salla"),
+  v.literal("shopify"),
   v.literal("meta"),
   v.literal("google"),
   v.literal("tiktok"),

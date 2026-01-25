@@ -1,5 +1,6 @@
 // Export all integration clients
 export { SallaClient, parseSallaWebhook, verifySallaWebhook } from "./salla";
+export { ShopifyClient, parseShopifyWebhook, verifyShopifyWebhook, exchangeShopifyTokens } from "./shopify";
 export { MetaAdsClient } from "./meta";
 export { GoogleAdsClient } from "./google";
 export { TikTokAdsClient } from "./tiktok";
@@ -19,6 +20,7 @@ export {
 // Import types
 import { IntegrationPlatform } from "@/types/integrations";
 import { SallaClient } from "./salla";
+import { ShopifyClient } from "./shopify";
 import { MetaAdsClient } from "./meta";
 import { GoogleAdsClient } from "./google";
 import { TikTokAdsClient } from "./tiktok";
@@ -39,6 +41,10 @@ export function createIntegrationClient(
   switch (platform) {
     case "salla":
       return new SallaClient(accessToken, options?.refreshToken);
+
+    case "shopify":
+      // accountId is the shop domain for Shopify (e.g., "my-store.myshopify.com")
+      return new ShopifyClient(accessToken, accountId);
 
     case "meta":
       return new MetaAdsClient(accessToken, accountId, options?.refreshToken);

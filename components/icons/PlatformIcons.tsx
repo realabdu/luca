@@ -61,12 +61,22 @@ export function PlatformIcon({ platform, className = "", size = 24 }: PlatformIc
       return <TiktokLogo {...iconProps} color="#000000" />;
     case "snapchat":
       return (
-        <img 
-          src="/snapchat-logo-svgrepo-com.svg" 
-          alt="Snapchat" 
-          width={size} 
-          height={size} 
-          className={className} 
+        <img
+          src="/snapchat-logo-svgrepo-com.svg"
+          alt="Snapchat"
+          width={size}
+          height={size}
+          className={className}
+        />
+      );
+    case "shopify":
+      return (
+        <img
+          src="/shopify-logo.svg"
+          alt="Shopify"
+          width={size}
+          height={size}
+          className={className}
         />
       );
     default:
@@ -78,6 +88,7 @@ export function PlatformIcon({ platform, className = "", size = 24 }: PlatformIc
 export const PLATFORM_COLORS: Record<ExtendedPlatform, string> = {
   luca: "#107a76",
   salla: "#004956",
+  shopify: "#96bf48",
   meta: "#0081FB",
   google: "#FBBC04",
   tiktok: "#000000",

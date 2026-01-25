@@ -117,6 +117,7 @@ export default function OverviewContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<DateRange>(getDefaultDateRange);
+  const [minLoadTimeElapsed, setMinLoadTimeElapsed] = useState(false);
   const [syncStatus, setSyncStatus] = useState<{
     lastSyncAt: number | null;
     fromCache: boolean;
@@ -160,6 +161,15 @@ export default function OverviewContent() {
 
   // Check if integrations are still loading
   const isLoadingIntegrations = canQuery && hasIntegrationsApi && (!clerkOrgId || integrations === undefined);
+
+  // Add minimum load time for new users without integrations to avoid jarring transition
+  useEffect(() => {
+    if (canQuery && integrations !== undefined && !hasAnyIntegrations) {
+      const timer = setTimeout(() => setMinLoadTimeElapsed(true), 3000);
+      return () => clearTimeout(timer);
+    }
+    setMinLoadTimeElapsed(false);
+  }, [canQuery, integrations, hasAnyIntegrations]);
 
   const fetchDashboardData = useCallback(async (range: DateRange, forceLive = false) => {
     try {
@@ -380,7 +390,7 @@ export default function OverviewContent() {
     return (
       <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
         <div className="flex items-center justify-center min-h-[400px]">
-          <div className="animate-spin size-8 border-2 border-primary border-t-transparent"></div>
+          <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full"></div>
         </div>
       </div>
     );
@@ -415,7 +425,20 @@ export default function OverviewContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <MetricCardSkeleton />
           <MetricCardSkeleton />
-          <MetricCardSkeleton size="hero" />
+          <MetricCardSkeleton size="hero" className="lg:col-span-1" />
+        </div>
+        {/* Secondary metrics - 4 column */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <MetricCardSkeleton key={i} />)}
+        </div>
+        {/* Charts */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 bg-white border border-border-light p-6 h-80">
+            <div className="skeleton h-full" />
+          </div>
+          <div className="bg-white border border-border-light p-6 h-80">
+            <div className="skeleton h-full" />
+          </div>
         </div>
       </div>
     );
@@ -423,8 +446,43 @@ export default function OverviewContent() {
 
   // Show empty state if no integrations are connected
   if (canQuery && integrations !== undefined && !hasAnyIntegrations) {
+    // Show skeleton during 3-second transition for smoother UX
+    if (!minLoadTimeElapsed) {
+      return (
+        <div className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <div className="h-8 w-32 skeleton mb-2" />
+              <div className="h-4 w-64 skeleton" />
+            </div>
+            <div className="h-10 w-48 skeleton" />
+          </div>
+          {/* Main metrics - 3 column */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <MetricCardSkeleton />
+            <MetricCardSkeleton />
+            <MetricCardSkeleton size="hero" className="lg:col-span-1" />
+          </div>
+          {/* Secondary metrics - 4 column */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map(i => <MetricCardSkeleton key={i} />)}
+          </div>
+          {/* Charts */}
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="xl:col-span-2 bg-white border border-border-light p-6 h-80">
+              <div className="skeleton h-full" />
+            </div>
+            <div className="bg-white border border-border-light p-6 h-80">
+              <div className="skeleton h-full" />
+            </div>
+          </div>
+        </div>
+      );
+    }
+    // After 3 seconds, show EmptyDashboard
     return (
-      <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
+      <div className="p-6 lg:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500">
         <EmptyDashboard
           integrations={{
             salla: { connected: false },
@@ -520,7 +578,7 @@ export default function OverviewContent() {
           <>
             <MetricCardSkeleton />
             <MetricCardSkeleton />
-            <MetricCardSkeleton size="hero" />
+            <MetricCardSkeleton size="hero" className="lg:col-span-1" />
           </>
         ) : (
           <>
@@ -535,7 +593,11 @@ export default function OverviewContent() {
       </div>
 
       {/* Secondary Metrics - 4 column grid */}
-      {!loading && customMetrics.length > 0 && (
+      {loading ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <MetricCardSkeleton key={i} />)}
+        </div>
+      ) : customMetrics.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {customMetrics.map((metric, idx) => (
             <MetricCard key={idx} {...metric} showSparkline={false} />
@@ -544,6 +606,16 @@ export default function OverviewContent() {
       )}
 
       {/* Charts Section */}
+      {loading ? (
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          <div className="xl:col-span-2 bg-white border border-border-light p-6 h-80">
+            <div className="skeleton h-full" />
+          </div>
+          <div className="bg-white border border-border-light p-6 h-80">
+            <div className="skeleton h-full" />
+          </div>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         {/* Performance Chart - Takes 2 columns */}
         <div className="xl:col-span-2 bg-white border border-border-light p-6 flex flex-col">
@@ -566,9 +638,7 @@ export default function OverviewContent() {
             </div>
           </div>
           <div className="flex-1 min-h-[280px]">
-            {loading ? (
-              <div className="h-full skeleton" />
-            ) : performance.length > 0 ? (
+            {performance.length > 0 ? (
               <DynamicPerformanceChart
                 data={performance}
                 width={800}
@@ -591,9 +661,7 @@ export default function OverviewContent() {
         <div className="bg-white border border-border-light p-6 flex flex-col">
           <h3 className="text-base font-semibold text-text-main mb-6">Spend by Platform</h3>
           <div className="flex-1 min-h-[200px]">
-            {loading ? (
-              <div className="h-full skeleton" />
-            ) : platformSpend.length > 0 ? (
+            {platformSpend.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={platformSpend} layout="vertical" margin={{ top: 0, right: 24, left: 0, bottom: 0 }} barSize={28}>
                   <XAxis type="number" hide />
@@ -661,6 +729,7 @@ export default function OverviewContent() {
           )}
         </div>
       </div>
+      )}
 
       {/* Footer Notice */}
       {dashboardData && (

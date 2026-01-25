@@ -129,7 +129,8 @@ export default defineSchema({
       v.literal("Snapchat"),
       v.literal("X"),
       v.literal("Klaviyo"),
-      v.literal("salla") // E-commerce source
+      v.literal("salla"), // E-commerce source
+      v.literal("shopify") // Shopify e-commerce source
     ),
     campaign: v.optional(v.string()), // Optional for e-commerce events
     creativeUrl: v.optional(v.string()), // Optional for e-commerce events
@@ -200,6 +201,7 @@ export default defineSchema({
     organizationId: v.optional(v.id("organizations")), // Optional for migration of legacy data
     platform: v.union(
       v.literal("salla"),
+      v.literal("shopify"),
       v.literal("meta"),
       v.literal("google"),
       v.literal("tiktok"),

@@ -1,5 +1,5 @@
 // Platform types for integrations
-export type IntegrationPlatform = "salla" | "meta" | "google" | "tiktok" | "snapchat";
+export type IntegrationPlatform = "salla" | "shopify" | "meta" | "google" | "tiktok" | "snapchat";
 
 export type SyncType = "campaigns" | "events" | "orders" | "metrics" | "full";
 
@@ -21,6 +21,13 @@ export const OAUTH_CONFIGS: Record<IntegrationPlatform, Omit<OAuthConfig, "clien
     authUrl: "https://accounts.salla.sa/oauth2/auth",
     tokenUrl: "https://accounts.salla.sa/oauth2/token",
     scopes: ["offline_access", "orders.read_write", "products.read_write", "customers.read_write", "branches.read_write"],
+  },
+  shopify: {
+    // Note: authUrl and tokenUrl are per-store: https://{shop}.myshopify.com/admin/oauth/...
+    // These are placeholders - actual URLs are built dynamically with shop domain
+    authUrl: "https://{shop}.myshopify.com/admin/oauth/authorize",
+    tokenUrl: "https://{shop}.myshopify.com/admin/oauth/access_token",
+    scopes: ["read_orders", "read_customers", "read_products", "read_analytics"],
   },
   meta: {
     authUrl: "https://www.facebook.com/v18.0/dialog/oauth",
@@ -136,6 +143,21 @@ export interface SallaWebhookPayload {
   data: Record<string, unknown>;
 }
 
+// Shopify webhook event types
+export type ShopifyWebhookEvent =
+  | "orders/create"
+  | "orders/updated"
+  | "orders/paid"
+  | "orders/cancelled"
+  | "refunds/create";
+
+// Shopify webhook payload
+export interface ShopifyWebhookPayload {
+  id: number;
+  admin_graphql_api_id: string;
+  [key: string]: unknown;
+}
+
 // Platform display info for UI
 export interface PlatformDisplayInfo {
   id: IntegrationPlatform;
@@ -152,6 +174,13 @@ export const PLATFORM_INFO: Record<IntegrationPlatform, Omit<PlatformDisplayInfo
     description: "Saudi Arabia's leading e-commerce platform",
     icon: "storefront",
     color: "#6366f1",
+    category: "ecommerce",
+  },
+  shopify: {
+    name: "Shopify",
+    description: "Global e-commerce platform",
+    icon: "shopping_cart",
+    color: "#96bf48",
     category: "ecommerce",
   },
   meta: {

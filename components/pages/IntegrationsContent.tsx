@@ -27,6 +27,11 @@ const PLATFORM_DISPLAY: Record<
     description: "Saudi Arabia's leading e-commerce platform",
     category: "ecommerce",
   },
+  shopify: {
+    name: "Shopify",
+    description: "Global e-commerce platform",
+    category: "ecommerce",
+  },
   meta: {
     name: "Meta Ads",
     description: "Connect Facebook & Instagram ad accounts",
@@ -138,6 +143,26 @@ export default function IntegrationsContent() {
   }, [notification]);
 
   const handleConnect = (platform: IntegrationPlatform) => {
+    // Shopify requires shop domain - prompt user for it
+    if (platform === "shopify") {
+      const shopDomain = prompt(
+        "Enter your Shopify store domain (e.g., your-store.myshopify.com):"
+      );
+      if (!shopDomain) return;
+
+      // Validate format
+      if (!shopDomain.includes(".myshopify.com")) {
+        setNotification({
+          type: "error",
+          message: "Please enter a valid Shopify domain ending in .myshopify.com",
+        });
+        return;
+      }
+
+      window.location.href = `/api/auth/shopify?shop=${encodeURIComponent(shopDomain)}`;
+      return;
+    }
+
     // Redirect to OAuth initiation endpoint
     window.location.href = `/api/auth/${platform}`;
   };
@@ -180,11 +205,13 @@ export default function IntegrationsContent() {
     return integrations.find((i) => i.platform === platform);
   };
 
-  const ecommercePlatforms: IntegrationPlatform[] = ["salla"];
+  const ecommercePlatforms: IntegrationPlatform[] = ["salla", "shopify"];
   const adsPlatforms: IntegrationPlatform[] = ["meta", "google", "tiktok", "snapchat"];
 
   const connectedCount = integrations?.filter((i) => i.isConnected).length || 0;
   const sallaConnected = getIntegrationStatus("salla")?.isConnected;
+  const shopifyConnected = getIntegrationStatus("shopify")?.isConnected;
+  const ecommerceConnected = sallaConnected || shopifyConnected;
 
   // Check if integrations are still loading (waiting for org or query result)
   const isLoadingIntegrations = canQuery && (!clerkOrgId || integrations === undefined);
@@ -270,26 +297,26 @@ export default function IntegrationsContent() {
                 className={`
                   relative z-10 flex items-center justify-center size-10 shrink-0 mx-auto
                   border-2 transition-colors
-                  ${sallaConnected
+                  ${ecommerceConnected
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text-muted border-border-light"
                   }
                 `}
               >
                 <span className="material-symbols-outlined text-[20px]">
-                  {sallaConnected ? "check" : "storefront"}
+                  {ecommerceConnected ? "check" : "storefront"}
                 </span>
               </div>
               {/* Right connector */}
               <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-1/2 h-0.5 bg-border-light">
                 <div
                   className="h-full bg-primary transition-all duration-300"
-                  style={{ width: sallaConnected ? "100%" : "0%" }}
+                  style={{ width: ecommerceConnected ? "100%" : "0%" }}
                 />
               </div>
             </div>
             <div className="text-center mt-3">
-              <span className={`text-sm font-bold block text-balance ${sallaConnected ? "text-primary" : "text-text-muted"}`}>
+              <span className={`text-sm font-bold block text-balance ${ecommerceConnected ? "text-primary" : "text-text-muted"}`}>
                 Connect Store
               </span>
               <span className="text-xs text-text-muted">Start here</span>
@@ -303,14 +330,14 @@ export default function IntegrationsContent() {
               <div className="absolute right-1/2 top-1/2 -translate-y-1/2 w-1/2 h-0.5 bg-border-light">
                 <div
                   className="h-full bg-primary transition-all duration-300"
-                  style={{ width: sallaConnected ? "100%" : "0%" }}
+                  style={{ width: ecommerceConnected ? "100%" : "0%" }}
                 />
               </div>
               <div
                 className={`
                   relative z-10 flex items-center justify-center size-10 shrink-0 mx-auto
                   border-2 transition-colors
-                  ${sallaConnected
+                  ${ecommerceConnected
                     ? "bg-primary text-white border-primary"
                     : "bg-white text-text-muted border-border-light"
                   }
@@ -322,12 +349,12 @@ export default function IntegrationsContent() {
               <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-1/2 h-0.5 bg-border-light">
                 <div
                   className="h-full bg-primary transition-all duration-300"
-                  style={{ width: sallaConnected ? "100%" : "0%" }}
+                  style={{ width: ecommerceConnected ? "100%" : "0%" }}
                 />
               </div>
             </div>
             <div className="text-center mt-3">
-              <span className={`text-sm font-bold block text-balance ${sallaConnected ? "text-primary" : "text-text-muted"}`}>
+              <span className={`text-sm font-bold block text-balance ${ecommerceConnected ? "text-primary" : "text-text-muted"}`}>
                 Activate Pixel
               </span>
               <span className="text-xs text-text-muted">Auto-configured</span>
@@ -362,7 +389,7 @@ export default function IntegrationsContent() {
                 Connect Ads
               </span>
               <span className="text-xs text-text-muted tabular-nums">
-                {connectedCount > 0 ? connectedCount - (sallaConnected ? 1 : 0) : 0} Connected
+                {connectedCount > 0 ? connectedCount - (sallaConnected ? 1 : 0) - (shopifyConnected ? 1 : 0) : 0} Connected
               </span>
             </div>
           </div>

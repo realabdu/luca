@@ -153,7 +153,7 @@ export default function OnboardingWizard() {
   if (!isLoaded || !isOrgLoaded) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin size-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full"></div>
       </div>
     );
   }
@@ -172,7 +172,7 @@ export default function OnboardingWizard() {
   if (onboardingStatus === undefined || integrations === undefined) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin size-8 border-2 border-primary border-t-transparent"></div>
+        <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full"></div>
       </div>
     );
   }

@@ -14,6 +14,7 @@ const api = require("@/convex/_generated/api").api as any;
 
 const VALID_PLATFORMS: IntegrationPlatform[] = [
   "salla",
+  "shopify",
   "meta",
   "google",
   "tiktok",
@@ -96,7 +97,47 @@ export async function GET(
   try {
     // Exchange code for tokens
     let tokens;
-    if (platformKey === "snapchat") {
+    let accountInfo: { id: string; name: string; metadata?: Record<string, unknown> };
+
+    if (platformKey === "shopify") {
+      // Shopify has a different flow - get shop domain from cookie or query param
+      const shopDomain = request.cookies.get("shopify_shop_domain")?.value ||
+        searchParams.get("shop");
+
+      if (!shopDomain) {
+        return redirectWithError("Missing shop domain for Shopify");
+      }
+
+      // Exchange code for Shopify tokens
+      tokens = await exchangeShopifyTokens(
+        shopDomain,
+        clientId,
+        clientSecret,
+        code
+      );
+
+      // Get Shopify store info
+      const shopResponse = await fetch(
+        `https://${shopDomain}/admin/api/2025-01/shop.json`,
+        {
+          headers: { "X-Shopify-Access-Token": tokens.access_token },
+        }
+      );
+      if (!shopResponse.ok) throw new Error("Failed to get Shopify store info");
+      const shopData = await shopResponse.json();
+
+      // Use shop domain as accountId (for webhook routing)
+      accountInfo = {
+        id: shopDomain,
+        name: shopData.shop?.name || "Shopify Store",
+        metadata: {
+          shop_id: shopData.shop?.id,
+          domain: shopData.shop?.domain,
+          myshopify_domain: shopData.shop?.myshopify_domain,
+          currency: shopData.shop?.currency,
+        },
+      };
+    } else if (platformKey === "snapchat") {
       // Snapchat requires Basic Auth header for token exchange
       tokens = await exchangeSnapchatTokens(
         clientId,
@@ -104,6 +145,7 @@ export async function GET(
         code,
         redirectUri
       );
+      accountInfo = await getAccountInfo(platformKey, tokens.access_token);
     } else {
       tokens = await exchangeCodeForTokens(
         OAUTH_CONFIGS[platformKey].tokenUrl,
@@ -112,10 +154,8 @@ export async function GET(
         code,
         redirectUri
       );
+      accountInfo = await getAccountInfo(platformKey, tokens.access_token);
     }
-
-    // Get account info based on platform
-    const accountInfo = await getAccountInfo(platformKey, tokens.access_token);
 
     // Encrypt tokens before storing
     const encryptedAccessToken = await encryptAsync(tokens.access_token);
@@ -124,6 +164,7 @@ export async function GET(
       : undefined;
 
     // Store integration in Convex WITH organizationId
+    // Note: Shopify offline tokens don't expire, so no expiresAt
     await client.mutation(api.integrations.upsertIntegration, {
       organizationId: organizationId,
       platform: platformKey,
@@ -150,6 +191,10 @@ export async function GET(
       new URL(`/integrations?connected=${platform}`, baseUrl)
     );
     response.cookies.delete(`oauth_state_${platform}`);
+    // Clear Shopify shop domain cookie if present
+    if (platformKey === "shopify") {
+      response.cookies.delete("shopify_shop_domain");
+    }
     return response;
   } catch (err) {
     console.error(`OAuth callback error for ${platform}:`, err);
@@ -176,6 +221,11 @@ function getCredentials(platform: IntegrationPlatform): {
       return {
         clientId: process.env.SALLA_CLIENT_ID,
         clientSecret: process.env.SALLA_CLIENT_SECRET,
+      };
+    case "shopify":
+      return {
+        clientId: process.env.SHOPIFY_CLIENT_ID,
+        clientSecret: process.env.SHOPIFY_CLIENT_SECRET,
       };
     case "meta":
       return {
@@ -317,6 +367,13 @@ async function getAccountInfo(
       };
     }
 
+    case "shopify": {
+      // For Shopify, accessToken is actually unused here - we use shopDomain
+      // The shop domain is passed separately, and we use the API to get shop info
+      // Note: This case requires shopDomain to be passed, see handleShopifyCallback
+      throw new Error("Shopify account info should be fetched separately with shop domain");
+    }
+
     default:
       throw new Error(`Unknown platform: ${platform}`);
   }
@@ -359,6 +416,35 @@ async function exchangeSnapchatTokens(
     const error = await response.text();
     console.error("Snapchat token exchange error:", error);
     throw new Error(`Snapchat token exchange failed: ${error}`);
+  }
+
+  return response.json();
+}
+
+async function exchangeShopifyTokens(
+  shopDomain: string,
+  clientId: string,
+  clientSecret: string,
+  code: string
+): Promise<{ access_token: string; scope: string }> {
+  const tokenUrl = `https://${shopDomain}/admin/oauth/access_token`;
+
+  const response = await fetch(tokenUrl, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error("Shopify token exchange error:", error);
+    throw new Error(`Shopify token exchange failed: ${error}`);
   }
 
   return response.json();

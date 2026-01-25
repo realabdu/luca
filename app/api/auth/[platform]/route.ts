@@ -14,6 +14,7 @@ const api = require("@/convex/_generated/api").api as any;
 
 const VALID_PLATFORMS: IntegrationPlatform[] = [
   "salla",
+  "shopify",
   "meta",
   "google",
   "tiktok",
@@ -126,6 +127,49 @@ export async function GET(
     expiresAt: expiresAt,
   });
 
+  // Build OAuth URL - handle Shopify's per-store URL differently
+  let authUrl: string;
+  if (platformKey === "shopify") {
+    // Shopify requires shop domain in query param
+    const shopDomain = request.nextUrl.searchParams.get("shop");
+    if (!shopDomain) {
+      return NextResponse.json(
+        { error: "Missing shop parameter. Use ?shop=your-store.myshopify.com" },
+        { status: 400 }
+      );
+    }
+
+    // Validate shop domain format
+    if (!shopDomain.endsWith(".myshopify.com")) {
+      return NextResponse.json(
+        { error: "Invalid shop domain. Must end with .myshopify.com" },
+        { status: 400 }
+      );
+    }
+
+    // Build Shopify OAuth URL
+    const scopes = OAUTH_CONFIGS.shopify.scopes.join(",");
+    authUrl = `https://${shopDomain}/admin/oauth/authorize?client_id=${clientId}&scope=${scopes}&redirect_uri=${encodeURIComponent(redirectUri)}&state=${state}`;
+
+    // Store shop domain in cookie for callback
+    const response = NextResponse.redirect(authUrl);
+    response.cookies.set(`oauth_state_${platform}`, state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+    response.cookies.set("shopify_shop_domain", shopDomain, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 600,
+      path: "/",
+    });
+    return response;
+  }
+
   // Also store state in cookie as backup
   const response = NextResponse.redirect(
     buildOAuthUrl(platformKey, clientId, redirectUri, state)
@@ -146,6 +190,8 @@ function getClientId(platform: IntegrationPlatform): string | undefined {
   switch (platform) {
     case "salla":
       return process.env.SALLA_CLIENT_ID;
+    case "shopify":
+      return process.env.SHOPIFY_CLIENT_ID;
     case "meta":
       return process.env.META_APP_ID;
     case "google":
