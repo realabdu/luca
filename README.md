@@ -1,36 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Luca - Marketing Attribution Platform
 
-## Getting Started
+AI-powered marketing analytics for Saudi e-commerce.
 
-First, run the development server:
+## Project Structure
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+luca/
+├── backend/                    # Django REST API
+│   ├── apps/
+│   │   ├── accounts/           # Organizations, users, memberships, API keys
+│   │   ├── integrations/       # Platform integrations, OAuth, sync
+│   │   ├── campaigns/          # Campaign data from ad platforms
+│   │   ├── analytics/          # Daily metrics, performance data
+│   │   ├── attribution/        # Pixel events, click tracking
+│   │   ├── orders/             # E-commerce orders
+│   │   └── core/               # Base models, Clerk auth, encryption
+│   ├── config/
+│   │   ├── settings/           # Django settings (base, local, production)
+│   │   ├── celery_app.py       # Celery configuration
+│   │   ├── urls.py             # URL routing
+│   │   └── api_router.py       # DRF router
+│   ├── compose/                # Docker configs
+│   ├── requirements/           # Python dependencies
+│   └── manage.py
+├── frontend/                   # Next.js frontend
+│   ├── app/                    # Next.js app router pages
+│   ├── components/             # React components
+│   ├── lib/                    # Utilities and API client
+│   └── types/                  # TypeScript types
+├── docker-compose.yml          # Development stack
+└── Makefile                    # Development commands
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Prerequisites
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- Docker and Docker Compose
+- Node.js 20+
+- Python 3.12+
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quick Start
 
-## Learn More
+1. **Clone and setup environment:**
+   ```bash
+   git clone <repo-url>
+   cd luca
+   make setup
+   ```
 
-To learn more about Next.js, take a look at the following resources:
+2. **Configure environment variables:**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+   Backend (`backend/.env`):
+   - `CLERK_DOMAIN` - Your Clerk domain
+   - `CLERK_SECRET_KEY` - Your Clerk secret key
+   - `ENCRYPTION_KEY` - Key for encrypting OAuth tokens
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+   Frontend (`frontend/.env.local`):
+   - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` - Clerk publishable key
+   - `CLERK_SECRET_KEY` - Clerk secret key
+   - `NEXT_PUBLIC_API_URL` - Backend API URL (default: http://localhost:8000)
 
-## Deploy on Vercel
+3. **Start development:**
+   ```bash
+   make dev
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+   This starts:
+   - Django API at http://localhost:8000
+   - Next.js frontend at http://localhost:3000
+   - PostgreSQL at localhost:5432
+   - Redis at localhost:6379
+   - Celery worker and beat
+   - Flower (Celery monitoring) at http://localhost:5555
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Development Commands
+
+```bash
+# Docker
+make up              # Start all services
+make down            # Stop all services
+make logs            # View logs
+make build           # Rebuild images
+
+# Backend
+make shell           # Django shell
+make migrate         # Run migrations
+make makemigrations  # Create migrations
+make createsuperuser # Create admin user
+make test            # Run tests
+
+# Frontend
+make frontend-dev    # Start frontend dev server
+make frontend-build  # Build frontend
+```
+
+## API Documentation
+
+When running locally, visit:
+- Swagger UI: http://localhost:8000/api/docs/
+- API Schema: http://localhost:8000/api/schema/
+
+## Key Technologies
+
+### Backend
+- Django 5.1 + Django REST Framework
+- Celery + Redis (background tasks)
+- PostgreSQL (database)
+- PyJWT (Clerk token validation)
+
+### Frontend
+- Next.js 14 (App Router)
+- Clerk (authentication)
+- SWR (data fetching)
+- Tailwind CSS
+
+## Authentication
+
+The app uses Clerk for authentication:
+1. Frontend authenticates with Clerk
+2. JWT tokens are sent to Django API
+3. Django validates tokens against Clerk's JWKS
+4. User/organization context is extracted from token claims
+
+## Integrations
+
+Supported platforms:
+- **E-commerce:** Salla, Shopify
+- **Ad Platforms:** Meta, Google, TikTok, Snapchat
+
+OAuth flows are handled through the Django backend with encrypted token storage.
+
+## License
+
+Proprietary - All rights reserved.
