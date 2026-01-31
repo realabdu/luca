@@ -3,8 +3,8 @@ import {
   IntegrationPlatform,
 } from "@/types/integrations";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.lucaserv.com";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://lucaserv.com";
 
 const VALID_PLATFORMS: IntegrationPlatform[] = [
   "salla",

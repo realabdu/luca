@@ -147,7 +147,7 @@ export default function IntegrationsContent() {
       // Find the integration ID
       const integration = integrations?.find((i) => i.platform === platform);
       if (integration) {
-        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"}/api/v1/integrations/${integration.id}/disconnect/`, {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL || "https://api.lucaserv.com"}/api/v1/integrations/${integration.id}/disconnect/`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
