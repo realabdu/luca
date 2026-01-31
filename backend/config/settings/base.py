@@ -164,6 +164,9 @@ SERVER_EMAIL = env("DJANGO_SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 # Frontend URL for redirects
 FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 
+# API URL for OAuth callbacks (defaults to localhost for dev)
+API_URL = env("API_URL", default="http://localhost:8000")
+
 # ADMIN
 # ------------------------------------------------------------------------------
 ADMIN_URL = "admin/"

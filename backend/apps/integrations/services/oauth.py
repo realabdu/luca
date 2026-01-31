@@ -56,8 +56,8 @@ class OAuthService:
             "scopes": ["advertiser.basic.read", "advertiser.report.read"],
         },
         "snapchat": {
-            "authorize_url": "https://accounts.snapchat.com/accounts/oauth2/auth",
-            "token_url": "https://accounts.snapchat.com/accounts/oauth2/token",
+            "authorize_url": "https://accounts.snapchat.com/login/oauth2/authorize",
+            "token_url": "https://accounts.snapchat.com/login/oauth2/access_token",
             "scopes": ["snapchat-marketing-api"],
         },
     }
@@ -76,7 +76,8 @@ class OAuthService:
         client_id = getattr(settings, f"{self.platform.upper()}_CLIENT_ID", "")
         client_secret = getattr(settings, f"{self.platform.upper()}_CLIENT_SECRET", "")
 
-        redirect_uri = f"{settings.FRONTEND_URL}/api/auth/{self.platform}/callback"
+        # Use API URL for OAuth callbacks - callback goes directly to Django
+        redirect_uri = f"{settings.API_URL}/api/v1/integrations/{self.platform}/callback/"
 
         return OAuthConfig(
             client_id=client_id,
