@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.permissions import IsOrganizationAdmin
+from apps.core.permissions import IsOrganizationMember
 from apps.integrations.services.oauth import OAuthService
 from apps.integrations.models import Integration
 
@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 class OAuthConnectView(APIView):
     """Start OAuth flow for a platform."""
 
-    permission_classes = [IsOrganizationAdmin]
+    permission_classes = [IsOrganizationMember]
 
     def get(self, request, platform):
         """Generate authorization URL and redirect."""
