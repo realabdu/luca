@@ -4,7 +4,7 @@ compatibility_flags = ["nodejs_compat"]
 
 [vars]
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_live_Y2xlcmsubHVjYXNlcnYuY29tJA"
-NEXT_PUBLIC_CONVEX_URL = "https://reliable-ibex-927.convex.cloud"
+NEXT_PUBLIC_API_URL = "https://api.lucaserv.com"
 NEXT_PUBLIC_CLERK_SIGN_IN_URL = "/sign-in"
 NEXT_PUBLIC_CLERK_SIGN_UP_URL = "/sign-up"
 NEXT_PUBLIC_APP_URL = "https://lucaserv.com"
