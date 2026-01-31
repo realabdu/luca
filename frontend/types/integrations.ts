@@ -213,12 +213,9 @@ export const PLATFORM_INFO: Record<IntegrationPlatform, Omit<PlatformDisplayInfo
   },
 };
 
-// Re-export token exchange helpers
-export { exchangeCodeForTokens, refreshTokens } from "@/lib/integrations/base";
-import { buildOAuthUrl as baseBuildOAuthUrl } from "@/lib/integrations/base";
-
 /**
- * Build OAuth URL for a specific platform (wrapper around base function)
+ * Build OAuth URL for a specific platform
+ * Note: OAuth flow is now handled by Django backend
  */
 export function buildOAuthUrl(
   platform: IntegrationPlatform,
@@ -227,11 +224,12 @@ export function buildOAuthUrl(
   state: string
 ): string {
   const config = OAUTH_CONFIGS[platform];
-  return baseBuildOAuthUrl(
-    config.authUrl,
-    clientId,
-    redirectUri,
-    config.scopes,
-    state
-  );
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    response_type: "code",
+    scope: config.scopes.join(" "),
+    state: state,
+  });
+  return `${config.authUrl}?${params.toString()}`;
 }
