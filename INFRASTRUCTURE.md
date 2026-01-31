@@ -154,30 +154,7 @@ Any push to `master` branch with changes in `backend/**`
 
 ## Credentials & Secrets
 
-### Django Admin
-- Email: abdullah@lucaserv.com
-- Password: LucaAdmin2024!
-
-### Flower (Celery Monitoring)
-- Username: admin
-- Password: TcHTkjYzKz6gbQTLggp1Dit53mIEKhxt
-
-### Database
-- Host: 167.235.244.254
-- Port: 5432
-- Database: luca
-- User: luca
-- Password: LucaDb2024SecurePass!
-
-### Hetzner Object Storage (S3)
-- Access Key: EWTP14TZKN6PL7AAJWWZ
-- Secret Key: TDGTSK8Xr1rQ5mG9MRg8qgvAZ3X9fGYid0Rk8JC5
-- Endpoint: https://fsn1.your-objectstorage.com
-- Bucket: luca-os
-
-### Clerk Authentication
-- Domain: set-calf-77.clerk.accounts.dev
-- Secret Key: (in .envs/.production/.django)
+See `CREDENTIALS.md` (gitignored, not in version control).
 
 ---
 
