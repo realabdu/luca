@@ -34,13 +34,20 @@ async function fetchWithAuth(
   token: string | null,
   options: RequestInit = {}
 ): Promise<any> {
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    ...options.headers,
   };
 
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  // Merge any additional headers from options
+  if (options.headers) {
+    const optHeaders = new Headers(options.headers);
+    optHeaders.forEach((value, key) => {
+      headers[key] = value;
+    });
   }
 
   const response = await fetch(url, {
