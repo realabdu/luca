@@ -167,6 +167,21 @@ FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:3000")
 # API URL for OAuth callbacks (defaults to localhost for dev)
 API_URL = env("API_URL", default="http://localhost:8000")
 
+# OAuth Credentials
+# ------------------------------------------------------------------------------
+SALLA_CLIENT_ID = env("SALLA_CLIENT_ID", default="")
+SALLA_CLIENT_SECRET = env("SALLA_CLIENT_SECRET", default="")
+SHOPIFY_CLIENT_ID = env("SHOPIFY_CLIENT_ID", default="")
+SHOPIFY_CLIENT_SECRET = env("SHOPIFY_CLIENT_SECRET", default="")
+META_CLIENT_ID = env("META_CLIENT_ID", default="")
+META_CLIENT_SECRET = env("META_CLIENT_SECRET", default="")
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", default="")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", default="")
+TIKTOK_CLIENT_ID = env("TIKTOK_CLIENT_ID", default="")
+TIKTOK_CLIENT_SECRET = env("TIKTOK_CLIENT_SECRET", default="")
+SNAPCHAT_CLIENT_ID = env("SNAPCHAT_CLIENT_ID", default="")
+SNAPCHAT_CLIENT_SECRET = env("SNAPCHAT_CLIENT_SECRET", default="")
+
 # ADMIN
 # ------------------------------------------------------------------------------
 ADMIN_URL = "admin/"
