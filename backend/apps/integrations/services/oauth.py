@@ -145,10 +145,8 @@ class OAuthService:
             "client_secret": self.config.client_secret,
             "code": code,
             "redirect_uri": self.config.redirect_uri,
+            "grant_type": "authorization_code",
         }
-
-        if self.platform == "google":
-            data["grant_type"] = "authorization_code"
 
         response = httpx.post(token_url, data=data)
         response.raise_for_status()

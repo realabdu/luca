@@ -4,8 +4,8 @@ import useSWR, { SWRConfiguration, SWRResponse, mutate as globalMutate } from "s
 import { useAuth } from "@clerk/nextjs";
 import { useCallback, useState } from "react";
 
-// API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// API Configuration - default to production URL since env vars may not be available in Cloudflare
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.lucaserv.com";
 const API_VERSION = "/api/v1";
 
 // Types
