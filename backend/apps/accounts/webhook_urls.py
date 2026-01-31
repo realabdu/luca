@@ -1,0 +1,9 @@
+"""Webhook URLs for Clerk events."""
+
+from django.urls import path
+
+from .webhooks import ClerkWebhookView
+
+urlpatterns = [
+    path("", ClerkWebhookView.as_view(), name="clerk-webhook"),
+]

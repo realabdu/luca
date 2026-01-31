@@ -1,0 +1,27 @@
+# Local Development: PostgreSQL and Redis only
+# Django and Celery run locally with python manage.py
+
+volumes:
+  postgres_data: {}
+  redis_data: {}
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: luca_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=luca
+      - POSTGRES_USER=luca
+      - POSTGRES_PASSWORD=luca
+    ports:
+      - "5433:5432"
+
+  redis:
+    image: redis:7
+    container_name: luca_redis
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"

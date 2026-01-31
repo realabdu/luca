@@ -1,0 +1,76 @@
+# Production: Full Django + Celery stack
+# All services run in Docker containers
+
+volumes:
+  postgres_data: {}
+  redis_data: {}
+
+services:
+  django:
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    container_name: luca_django
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.production
+    ports:
+      - "8000:8000"
+    command: /start
+
+  postgres:
+    image: postgres:16
+    container_name: luca_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      - .env.production
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-luca}
+      - POSTGRES_USER=${POSTGRES_USER:-luca}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-luca}
+
+  redis:
+    image: redis:7
+    container_name: luca_redis
+    volumes:
+      - redis_data:/data
+
+  celeryworker:
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    container_name: luca_celeryworker
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.production
+    command: /start-celeryworker
+
+  celerybeat:
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    container_name: luca_celerybeat
+    depends_on:
+      - postgres
+      - redis
+    env_file:
+      - .env.production
+    command: /start-celerybeat
+
+  flower:
+    build:
+      context: .
+      dockerfile: ./compose/production/django/Dockerfile
+    container_name: luca_flower
+    depends_on:
+      - celeryworker
+    env_file:
+      - .env.production
+    ports:
+      - "5555:5555"
+    command: /start-flower

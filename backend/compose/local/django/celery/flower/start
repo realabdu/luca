@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -o errexit
+set -o nounset
+
+exec celery -A config.celery_app flower \
+    --port=5555 \
+    --broker="${CELERY_BROKER_URL:-redis://redis:6379/0}"
