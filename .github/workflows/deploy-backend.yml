@@ -1,0 +1,39 @@
+name: Deploy Backend to Hetzner
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'backend/**'
+      - '.github/workflows/deploy-backend.yml'
+
+jobs:
+  deploy:
+    name: Deploy to Hetzner
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HETZNER_BACKEND_IP }}
+          username: root
+          key: ${{ secrets.HETZNER_SSH_PRIVATE_KEY }}
+          script: |
+            cd /app/luca/backend
+
+            # Pull latest code
+            git pull origin master
+
+            # Rebuild and restart services
+            docker compose -f docker-compose.production.yml build django
+            docker compose -f docker-compose.production.yml up -d --force-recreate django celeryworker celerybeat flower
+
+            # Run migrations
+            docker compose -f docker-compose.production.yml exec -T django python manage.py migrate --noinput
+
+            # Collect static files
+            docker compose -f docker-compose.production.yml exec -T django python manage.py collectstatic --noinput
+
+            echo "Deployment completed successfully!"
