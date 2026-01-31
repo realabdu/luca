@@ -4,7 +4,8 @@ import {
   IntegrationPlatform,
 } from "@/types/integrations";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// Hardcode production API URL - env vars may not be available in Cloudflare edge runtime
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.lucaserv.com";
 
 const VALID_PLATFORMS: IntegrationPlatform[] = [
   "salla",
@@ -56,31 +57,48 @@ export async function GET(
     djangoUrl += `?shop=${encodeURIComponent(shopDomain)}`;
   }
 
-  // Fetch OAuth URL from Django with authentication
-  const response = await fetch(djangoUrl, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-  });
+  try {
+    // Fetch OAuth URL from Django with authentication
+    const response = await fetch(djangoUrl, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Failed to initiate OAuth" }));
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = "Failed to initiate OAuth";
+      try {
+        const errorJson = JSON.parse(errorText);
+        errorMessage = errorJson.message || errorJson.error || errorJson.detail || errorMessage;
+      } catch {
+        // If not JSON, use the text if it's short enough
+        if (errorText.length < 200) {
+          errorMessage = errorText || errorMessage;
+        }
+      }
+      return NextResponse.json(
+        { error: errorMessage, status: response.status, url: djangoUrl },
+        { status: response.status }
+      );
+    }
+
+    const data = await response.json();
+
+    // Django should return an authorization_url to redirect to
+    if (data.authorization_url) {
+      return NextResponse.redirect(data.authorization_url);
+    }
+
     return NextResponse.json(
-      { error: error.message || "Failed to initiate OAuth" },
-      { status: response.status }
+      { error: "No authorization URL returned", data },
+      { status: 500 }
+    );
+  } catch (error) {
+    return NextResponse.json(
+      { error: `Network error: ${error instanceof Error ? error.message : 'Unknown'}`, url: djangoUrl },
+      { status: 500 }
     );
   }
-
-  const data = await response.json();
-
-  // Django should return an authorization_url to redirect to
-  if (data.authorization_url) {
-    return NextResponse.redirect(data.authorization_url);
-  }
-
-  return NextResponse.json(
-    { error: "No authorization URL returned" },
-    { status: 500 }
-  );
 }
