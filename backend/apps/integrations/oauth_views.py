@@ -54,7 +54,7 @@ class OAuthCallbackView(APIView):
     permission_classes = []
     authentication_classes = []
 
-    async def get(self, request, platform):
+    def get(self, request, platform):
         """Process OAuth callback."""
         code = request.query_params.get("code")
         state = request.query_params.get("state")
@@ -70,7 +70,7 @@ class OAuthCallbackView(APIView):
 
         try:
             oauth_service = OAuthService(platform)
-            result = await oauth_service.exchange_code(
+            result = oauth_service.exchange_code(
                 code=code,
                 state=state,
                 shop=shop,

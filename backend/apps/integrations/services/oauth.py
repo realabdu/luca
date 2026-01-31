@@ -117,7 +117,7 @@ class OAuthService:
 
         return f"{authorize_url}?{urlencode(params)}"
 
-    async def exchange_code(
+    def exchange_code(
         self,
         code: str,
         state: str,
@@ -150,10 +150,9 @@ class OAuthService:
         if self.platform == "google":
             data["grant_type"] = "authorization_code"
 
-        async with httpx.AsyncClient() as client:
-            response = await client.post(token_url, data=data)
-            response.raise_for_status()
-            tokens = response.json()
+        response = httpx.post(token_url, data=data)
+        response.raise_for_status()
+        tokens = response.json()
 
         # Clean up OAuth state
         oauth_state.delete()
@@ -201,7 +200,7 @@ class OAuthService:
 
         return integration
 
-    async def refresh_tokens(self, integration: Integration) -> bool:
+    def refresh_tokens(self, integration: Integration) -> bool:
         """Refresh OAuth tokens."""
         if not integration.refresh_token:
             logger.warning(f"No refresh token for {integration}")
@@ -215,10 +214,9 @@ class OAuthService:
         }
 
         try:
-            async with httpx.AsyncClient() as client:
-                response = await client.post(self.config.token_url, data=data)
-                response.raise_for_status()
-                tokens = response.json()
+            response = httpx.post(self.config.token_url, data=data)
+            response.raise_for_status()
+            tokens = response.json()
 
             integration.access_token = tokens.get("access_token")
             if tokens.get("refresh_token"):
