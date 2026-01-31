@@ -17,7 +17,7 @@ const VALID_PLATFORMS: IntegrationPlatform[] = [
 
 /**
  * GET /api/auth/[platform]
- * Redirects to Django OAuth initiation endpoint
+ * Fetches OAuth URL from Django (with auth) and redirects user to it
  */
 export async function GET(
   request: NextRequest,
@@ -56,7 +56,31 @@ export async function GET(
     djangoUrl += `?shop=${encodeURIComponent(shopDomain)}`;
   }
 
-  // Redirect to Django OAuth endpoint
-  // Django will handle the OAuth state and redirect to the provider
-  return NextResponse.redirect(djangoUrl);
+  // Fetch OAuth URL from Django with authentication
+  const response = await fetch(djangoUrl, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: "Failed to initiate OAuth" }));
+    return NextResponse.json(
+      { error: error.message || "Failed to initiate OAuth" },
+      { status: response.status }
+    );
+  }
+
+  const data = await response.json();
+
+  // Django should return an authorization_url to redirect to
+  if (data.authorization_url) {
+    return NextResponse.redirect(data.authorization_url);
+  }
+
+  return NextResponse.json(
+    { error: "No authorization URL returned" },
+    { status: 500 }
+  );
 }
