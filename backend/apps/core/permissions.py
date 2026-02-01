@@ -3,6 +3,8 @@
 from rest_framework import permissions, status
 from rest_framework.response import Response
 
+from apps.accounts.models import Membership
+
 
 NO_ORG_ERROR_RESPONSE = Response(
     {"error": "No organization context"},
@@ -56,34 +58,29 @@ class IsOrganizationMember(permissions.BasePermission):
 class IsOrganizationAdmin(permissions.BasePermission):
     """
     Permission that requires the user to be an admin of the organization.
+
+    Checks the Membership table in the database rather than relying on
+    JWT claims, which may not always include org_role.
     """
 
     message = "You must be an admin of the organization to perform this action."
 
     def has_permission(self, request, view):
-        import logging
-        logger = logging.getLogger(__name__)
-
         if not request.user or not request.user.is_authenticated:
             return False
 
         if not hasattr(request, "organization") or request.organization is None:
             return False
 
-        # Check auth info for org_role
-        # Clerk can send role as "admin", "org:admin", or other formats
-        auth = request.auth or {}
-        org_role = auth.get("org_role")
-
-        # Debug log to see what Clerk sends
-        logger.info(f"IsOrganizationAdmin check: org_role={org_role}, auth_keys={list(auth.keys())}")
-
-        # If no org_role, user might be the org creator (treat as admin)
-        if org_role is None:
-            # Check if user is the org owner/creator
-            return True  # Temporarily allow all org members
-
-        return org_role in ("admin", "org:admin") or "admin" in str(org_role).lower()
+        # Check membership in database
+        try:
+            membership = Membership.objects.get(
+                user=request.user,
+                organization=request.organization,
+            )
+            return membership.role == Membership.Role.ADMIN
+        except Membership.DoesNotExist:
+            return False
 
 
 class AllowPixelTracking(permissions.BasePermission):
