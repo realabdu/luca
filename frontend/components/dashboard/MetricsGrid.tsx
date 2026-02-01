@@ -12,7 +12,7 @@ interface DashboardMetric {
   color?: string;
   isPinned?: boolean;
   sparklineData?: { value: number }[];
-  platforms?: ('salla' | 'meta' | 'google' | 'tiktok' | 'snapchat')[];
+  platforms?: ('salla' | 'shopify' | 'meta' | 'google' | 'tiktok' | 'snapchat')[];
 }
 
 interface MetricsGridProps {

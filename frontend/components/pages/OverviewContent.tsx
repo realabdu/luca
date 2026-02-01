@@ -25,7 +25,7 @@ interface DashboardMetric {
   color?: string;
   isPinned?: boolean;
   sparklineData?: { value: number }[];
-  platforms?: ('salla' | 'meta' | 'google' | 'tiktok' | 'snapchat')[];
+  platforms?: ('salla' | 'shopify' | 'meta' | 'google' | 'tiktok' | 'snapchat')[];
 }
 
 const generateSparkline = (base: number, variance: number) =>
@@ -77,6 +77,19 @@ export default function OverviewContent() {
     return { trend: metric?.trend || 0, trendType: metric?.trendType || ('neutral' as const) };
   };
 
+  const sallaConnected = integrations?.some((i) => i.platform === 'salla' && i.isConnected);
+  const shopifyConnected = integrations?.some((i) => i.platform === 'shopify' && i.isConnected);
+  const connectedEcommercePlatforms = [
+    sallaConnected && 'salla',
+    shopifyConnected && 'shopify',
+  ].filter(Boolean) as ('salla' | 'shopify')[];
+
+  const revenueSourceLabel = connectedEcommercePlatforms.length === 2
+    ? 'from Salla & Shopify'
+    : connectedEcommercePlatforms.length === 1
+      ? `from ${connectedEcommercePlatforms[0] === 'salla' ? 'Salla' : 'Shopify'}`
+      : 'from e-commerce';
+
   const pins: DashboardMetric[] = dashboardData
     ? [
         {
@@ -84,11 +97,11 @@ export default function OverviewContent() {
           value: formatNumber(parseValue(getMetricValue('Total Revenue'))),
           unit: 'SAR',
           trend: getMetricTrend('Total Revenue').trend,
-          trendLabel: dateRange.compareEnabled ? 'vs previous period' : 'from Salla',
+          trendLabel: dateRange.compareEnabled ? 'vs previous period' : revenueSourceLabel,
           trendType: getMetricTrend('Total Revenue').trendType,
           isPinned: true,
           sparklineData: generateSparkline(parseValue(getMetricValue('Total Revenue')) / 1000, parseValue(getMetricValue('Total Revenue')) / 5000),
-          platforms: ['salla'] as const,
+          platforms: connectedEcommercePlatforms.length > 0 ? connectedEcommercePlatforms : ['salla'],
         },
         {
           label: 'Ad Spend',
@@ -223,7 +236,11 @@ export default function OverviewContent() {
 
       {dashboardData && (
         <div className="text-xs text-text-muted text-center py-4">
-          Data sources: Revenue from Salla &middot; Ad spend from connected platforms
+          Data sources: {connectedEcommercePlatforms.length === 2
+            ? 'Revenue from Salla & Shopify'
+            : connectedEcommercePlatforms.length === 1
+              ? `Revenue from ${connectedEcommercePlatforms[0] === 'salla' ? 'Salla' : 'Shopify'}`
+              : 'Revenue from connected stores'} &middot; Ad spend from connected platforms
           {dashboardData.lastSyncAt && <span> &middot; Last synced: {getRelativeTime(dashboardData.lastSyncAt)}</span>}
           {dashboardData.fromCache && <span> &middot; Data refreshes automatically every 15 minutes</span>}
         </div>

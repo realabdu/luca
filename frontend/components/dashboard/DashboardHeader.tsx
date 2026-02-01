@@ -26,6 +26,7 @@ export function DashboardHeader({
   integrations,
 }: DashboardHeaderProps) {
   const sallaConnected = integrations?.some((i) => i.platform === 'salla' && i.isConnected);
+  const shopifyConnected = integrations?.some((i) => i.platform === 'shopify' && i.isConnected);
   const snapchatConnected = integrations?.some((i) => i.platform === 'snapchat' && i.isConnected);
 
   return (
@@ -58,6 +59,7 @@ export function DashboardHeader({
         {integrations && (
           <ConnectionStatusPills
             sallaConnected={!!sallaConnected}
+            shopifyConnected={!!shopifyConnected}
             snapchatConnected={!!snapchatConnected}
           />
         )}
@@ -86,10 +88,11 @@ export function DashboardHeader({
 
 interface ConnectionStatusPillsProps {
   sallaConnected: boolean;
+  shopifyConnected: boolean;
   snapchatConnected: boolean;
 }
 
-export function ConnectionStatusPills({ sallaConnected, snapchatConnected }: ConnectionStatusPillsProps) {
+export function ConnectionStatusPills({ sallaConnected, shopifyConnected, snapchatConnected }: ConnectionStatusPillsProps) {
   return (
     <div className="hidden sm:flex items-center gap-2 mr-2" role="status" aria-label="Connection status">
       <div
@@ -102,6 +105,17 @@ export function ConnectionStatusPills({ sallaConnected, snapchatConnected }: Con
           aria-hidden="true"
         />
         Salla
+      </div>
+      <div
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium ${
+          shopifyConnected ? 'bg-success-muted text-success' : 'bg-slate-100 text-text-muted'
+        }`}
+      >
+        <span
+          className={`size-1.5 rounded-full ${shopifyConnected ? 'bg-success' : 'bg-slate-300'}`}
+          aria-hidden="true"
+        />
+        Shopify
       </div>
       <div
         className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium ${
