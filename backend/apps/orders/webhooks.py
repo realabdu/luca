@@ -19,6 +19,7 @@ from rest_framework.views import APIView
 from apps.integrations.models import Integration
 from apps.orders.models import Order
 from apps.attribution.models import AttributionEvent
+from apps.integrations.tasks import calculate_daily_metrics_for_org
 
 logger = logging.getLogger(__name__)
 
@@ -150,6 +151,10 @@ class BaseOrderWebhookView(APIView, ABC):
             customer_email=order_data.customer_email,
             customer_id=order_data.customer_id,
         )
+
+        # Recalculate daily metrics for the order date
+        order_date_str = order_data.order_date.strftime("%Y-%m-%d")
+        calculate_daily_metrics_for_org.delay(organization.id, order_date_str)
 
         logger.info(f"Processed {self.platform} order: {order_data.order_id}")
 
