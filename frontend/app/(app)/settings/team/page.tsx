@@ -1,26 +1,15 @@
 "use client";
 
 import { OrganizationProfile, useAuth, useOrganization } from "@clerk/nextjs";
-import { useApiQuery, Organization } from "@/lib/api-client";
-
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  avatarUrl: string | null;
-  joinedAt: string;
-}
+import { useOrganizationMembersQuery, useCurrentOrganizationQuery } from "@/features/organization/hooks/use-organization-queries";
 
 export default function TeamSettingsPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const { organization: clerkOrg, isLoaded: isOrgLoaded } = useOrganization();
 
-  // Only query when authenticated and organization is selected
-  const canQuery = isLoaded && isSignedIn && isOrgLoaded && !!clerkOrg;
-
-  const { data: members } = useApiQuery<Member[]>(canQuery ? '/organizations/members/' : null);
-  const { data: organization } = useApiQuery<Organization>(canQuery ? '/organizations/current/' : null);
+  // Use new React Query hooks
+  const { data: members } = useOrganizationMembersQuery();
+  const { data: organization } = useCurrentOrganizationQuery();
 
   // Show loading state while checking organization
   if (!isLoaded || !isOrgLoaded) {
@@ -77,7 +66,7 @@ export default function TeamSettingsPage() {
         />
       </div>
 
-      {/* Custom members list from Convex (additional info) */}
+      {/* Custom members list from API (additional info) */}
       {members && members.length > 0 && (
         <div className="mt-8">
           <h2 className="text-lg font-medium text-foreground mb-4">

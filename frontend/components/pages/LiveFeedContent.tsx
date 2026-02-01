@@ -4,24 +4,8 @@ import { useState } from 'react';
 import { useAuth, useOrganization } from '@clerk/nextjs';
 import { PlatformIcon } from "@/components/icons/PlatformIcons";
 import { IntegrationPlatform } from "@/types/integrations";
-import { useApiQuery } from '@/lib/api-client';
-
-interface AttributionEvent {
-  id: string;
-  timestamp: number;
-  timeLabel: string;
-  amount: number;
-  source: string;
-  campaign: string;
-  creativeUrl: string;
-  status: 'Paid' | 'Pending';
-}
-
-interface LiveStats {
-  revenue: number;
-  orders: number;
-  roas: string;
-}
+import { useAttributionEventsQuery, useLiveStatsQuery } from '@/features/attribution/hooks/use-attribution-queries';
+import type { AttributionEvent } from '@/features/attribution/domain/types';
 
 // Fallback data for when API is loading or empty
 const FALLBACK_EVENTS: AttributionEvent[] = [
@@ -39,20 +23,12 @@ export default function LiveFeedContent() {
   const { isLoaded, isSignedIn } = useAuth();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
 
-  // Only query when authenticated and organization is selected
-  const canQuery = isLoaded && isSignedIn && isOrgLoaded && !!organization;
-
-  // Build query params
-  const queryParams = new URLSearchParams();
-  if (selectedSource) queryParams.set('source', selectedSource);
-  queryParams.set('limit', '10');
-
-  const { data: eventsData } = useApiQuery<AttributionEvent[]>(
-    canQuery ? `/attribution/events/?${queryParams.toString()}` : null
-  );
-  const { data: recentStats } = useApiQuery<LiveStats>(
-    canQuery ? '/attribution/stats/' : null
-  );
+  // Use new React Query hooks
+  const { data: eventsData } = useAttributionEventsQuery({
+    source: selectedSource,
+    limit: 10,
+  });
+  const { data: recentStats } = useLiveStatsQuery();
 
   const events = eventsData?.length ? eventsData : FALLBACK_EVENTS;
   const stats = recentStats || { revenue: 4200, orders: 12, roas: '3.8' };

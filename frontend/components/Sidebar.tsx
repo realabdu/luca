@@ -4,24 +4,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { UserButton, useAuth } from '@clerk/nextjs';
-import { useApiQuery, OnboardingStatus } from '@/lib/api-client';
+import { useOnboardingStatusQuery } from '@/features/onboarding/hooks/use-onboarding-queries';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
 
-  // Only query when authenticated
-  const canQuery = isLoaded && isSignedIn;
-
-  // Fetch onboarding status from Django API
-  const { data: onboardingStatus } = useApiQuery<OnboardingStatus>(
-    canQuery ? '/onboarding/status/' : null
-  );
+  // Use new React Query hook
+  const { data: onboardingStatus } = useOnboardingStatusQuery();
 
   const showOnboardingCard = onboardingStatus &&
     onboardingStatus.status !== "completed" &&
-    !onboardingStatus.has_store_connected;
+    !onboardingStatus.hasStoreConnected;
 
   const coreWorkspaces = [
     { label: 'Overview', path: '/dashboard', icon: 'dashboard' },
@@ -65,17 +60,17 @@ const Sidebar = () => {
           >
             <div className="flex items-center gap-3 mb-3">
               <div className="size-9 bg-primary flex items-center justify-center shadow-sm">
-                <span className="material-symbols-outlined text-white text-[18px]">
+                <span className="material-symbols-outlined text-white text-[18px]" aria-hidden="true">
                   rocket_launch
                 </span>
               </div>
               <div className="flex-1 text-left">
                 <p className="text-sm font-semibold text-text-main">Complete Setup</p>
                 <p className="text-xs text-text-muted">
-                  Step {onboardingStatus.has_store_connected ? 2 : 1} of 2
+                  Step {onboardingStatus.hasStoreConnected ? 2 : 1} of 2
                 </p>
               </div>
-              <span className="material-symbols-outlined text-text-muted text-[18px] group-hover:translate-x-0.5 transition-transform">
+              <span className="material-symbols-outlined text-text-muted text-[18px] group-hover:translate-x-0.5 transition-transform" aria-hidden="true">
                 arrow_forward
               </span>
             </div>
@@ -83,7 +78,7 @@ const Sidebar = () => {
             <div className="h-1.5 bg-slate-100 overflow-hidden">
               <div
                 className="h-full bg-primary transition-all duration-300"
-                style={{ width: `${((onboardingStatus.has_store_connected ? 1 : 0) + (onboardingStatus.has_ads_connected ? 1 : 0)) / 2 * 100}%` }}
+                style={{ width: `${((onboardingStatus.hasStoreConnected ? 1 : 0) + (onboardingStatus.hasAdsConnected ? 1 : 0)) / 2 * 100}%` }}
               />
             </div>
           </button>
@@ -95,15 +90,25 @@ const Sidebar = () => {
 
         {/* Search */}
         <div className="relative">
-          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-subtle">
+          <label htmlFor="sidebar-search" className="sr-only">
+            Search navigation
+          </label>
+          <span
+            className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-subtle"
+            aria-hidden="true"
+          >
             search
           </span>
           <input
+            id="sidebar-search"
             type="text"
             placeholder="Search..."
             className="w-full bg-slate-50 border-0 pl-10 pr-3 py-2.5 text-sm text-text-main placeholder:text-text-subtle focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle font-medium bg-white border border-border-light px-1.5 py-0.5 hidden sm:inline">
+          <kbd
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle font-medium bg-white border border-border-light px-1.5 py-0.5 hidden sm:inline"
+            aria-hidden="true"
+          >
             /
           </kbd>
         </div>
@@ -126,7 +131,7 @@ const Sidebar = () => {
                     }
                   `}
                 >
-                  <span className={`material-symbols-outlined text-[20px] ${isActive(item.path) ? 'filled text-primary' : ''}`}>
+                  <span className={`material-symbols-outlined text-[20px] ${isActive(item.path) ? 'filled text-primary' : ''}`} aria-hidden="true">
                     {item.icon}
                   </span>
                   {item.label}
@@ -154,7 +159,7 @@ const Sidebar = () => {
                     }
                   `}
                 >
-                  <span className={`material-symbols-outlined text-[20px] ${isActive(item.path) ? 'filled text-primary' : ''}`}>
+                  <span className={`material-symbols-outlined text-[20px] ${isActive(item.path) ? 'filled text-primary' : ''}`} aria-hidden="true">
                     {item.icon}
                   </span>
                   {item.label}
@@ -181,7 +186,7 @@ const Sidebar = () => {
             <p className="text-sm font-medium text-text-main truncate">Account</p>
             <p className="text-xs text-text-muted truncate">Manage settings</p>
           </div>
-          <span className="material-symbols-outlined text-[18px] text-text-subtle">
+          <span className="material-symbols-outlined text-[18px] text-text-subtle" aria-hidden="true">
             chevron_right
           </span>
         </div>

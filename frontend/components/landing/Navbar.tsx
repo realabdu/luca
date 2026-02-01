@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
-import { Menu, Globe, X } from "lucide-react";
 import { useLanguage } from "@/lib/i18n";
 
 export default function LandingNavbar() {
@@ -78,8 +77,9 @@ export default function LandingNavbar() {
           <button
             className="flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-primary transition-colors"
             onClick={toggleLanguage}
+            aria-label={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
           >
-            <Globe className="w-4 h-4" />
+            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">language</span>
             {language === 'en' ? 'العربية' : 'English'}
           </button>
           <Link
@@ -100,8 +100,12 @@ export default function LandingNavbar() {
         <button
           className="md:hidden p-2 text-slate-600"
           onClick={() => setIsOpen(!isOpen)}
+          aria-expanded={isOpen}
+          aria-label={isOpen ? 'Close menu' : 'Open menu'}
         >
-          {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          <span className="material-symbols-outlined text-[24px]" aria-hidden="true">
+            {isOpen ? 'close' : 'menu'}
+          </span>
         </button>
       </div>
 
@@ -126,8 +130,9 @@ export default function LandingNavbar() {
             <button
               className="flex items-center gap-2 text-base font-medium text-slate-600 py-2 border-b border-slate-100"
               onClick={toggleLanguage}
+              aria-label={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
             >
-              <Globe className="w-4 h-4" />
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">language</span>
               {language === 'en' ? 'العربية' : 'English'}
             </button>
             <Link

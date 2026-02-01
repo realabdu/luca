@@ -2,11 +2,10 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { ReactNode } from "react";
-import { ApiProvider } from "./ApiProvider";
+import { ApiProvider } from "@/providers/ApiProvider";
 
 /**
- * Combined provider that wraps the application with both Clerk and API (SWR) providers.
- * Replaces the old ConvexClientProvider.
+ * Combined provider that wraps the application with both Clerk and React Query providers.
  */
 export function ClerkApiProvider({ children }: { children: ReactNode }) {
   return (

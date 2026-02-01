@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback, type KeyboardEvent } from 'react';
 
 export type DatePreset =
   | 'today'
@@ -152,7 +152,9 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
   const [showCustom, setShowCustom] = useState(value.preset === 'custom');
   const [customStart, setCustomStart] = useState(formatDateInput(value.startDate));
   const [customEnd, setCustomEnd] = useState(formatDateInput(value.endDate));
+  const [activeIndex, setActiveIndex] = useState(-1);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -164,6 +166,62 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Close on Escape and handle keyboard navigation
+  useEffect(() => {
+    if (!isOpen) return;
+
+    function handleKeyDown(event: globalThis.KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
+
+  // Reset active index when opening
+  useEffect(() => {
+    if (isOpen) {
+      const currentIndex = PRESETS.findIndex((p) => p.value === value.preset);
+      setActiveIndex(currentIndex >= 0 ? currentIndex : 0);
+    }
+  }, [isOpen, value.preset]);
+
+  const handleKeyNavigation = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (!isOpen) return;
+
+      switch (event.key) {
+        case 'ArrowDown':
+          event.preventDefault();
+          setActiveIndex((prev) => (prev < PRESETS.length - 1 ? prev + 1 : 0));
+          break;
+        case 'ArrowUp':
+          event.preventDefault();
+          setActiveIndex((prev) => (prev > 0 ? prev - 1 : PRESETS.length - 1));
+          break;
+        case 'Enter':
+        case ' ':
+          event.preventDefault();
+          if (activeIndex >= 0 && activeIndex < PRESETS.length) {
+            handlePresetSelect(PRESETS[activeIndex].value);
+          }
+          break;
+        case 'Home':
+          event.preventDefault();
+          setActiveIndex(0);
+          break;
+        case 'End':
+          event.preventDefault();
+          setActiveIndex(PRESETS.length - 1);
+          break;
+      }
+    },
+    [isOpen, activeIndex]
+  );
 
   const handlePresetSelect = (preset: DatePreset) => {
     const { startDate, endDate } = getDateRangeFromPreset(preset);
@@ -212,20 +270,24 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
     : PRESETS.find(p => p.value === value.preset)?.label || 'Last 30 Days';
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative" ref={dropdownRef} onKeyDown={handleKeyNavigation}>
       {/* Trigger Button */}
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen(!isOpen)}
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-label={`Date range: ${displayLabel}${value.compareEnabled ? ', comparing to previous period' : ''}`}
         className="flex items-center gap-2 border border-border-light bg-white px-3 py-2 text-sm font-medium text-text-main shadow-sm hover:bg-slate-50 hover:border-slate-300 transition-all"
       >
-        <span className="material-symbols-outlined text-[18px] text-primary">calendar_today</span>
+        <span className="material-symbols-outlined text-[18px] text-primary" aria-hidden="true">calendar_today</span>
         <span>{displayLabel}</span>
         {value.compareEnabled && (
           <span className="text-[10px] text-primary font-semibold bg-primary/10 px-1.5 py-0.5">
             vs prev
           </span>
         )}
-        <span className="material-symbols-outlined text-[16px] text-text-muted ml-1">
+        <span className="material-symbols-outlined text-[16px] text-text-muted ml-1" aria-hidden="true">
           {isOpen ? 'expand_less' : 'expand_more'}
         </span>
       </button>
@@ -234,11 +296,13 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
       {isOpen && (
         <div className="absolute right-0 top-full mt-2 w-80 bg-white border border-border-light shadow-xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           {/* Presets */}
-          <div className="p-2 border-b border-border-light">
+          <div className="p-2 border-b border-border-light" role="listbox" aria-label="Date range presets">
             <div className="grid grid-cols-2 gap-1">
-              {PRESETS.map((preset) => (
+              {PRESETS.map((preset, index) => (
                 <button
                   key={preset.value}
+                  role="option"
+                  aria-selected={value.preset === preset.value}
                   onClick={() => handlePresetSelect(preset.value)}
                   className={`
                     px-3 py-2 text-sm text-left transition-all
@@ -246,6 +310,7 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
                       ? 'bg-primary/10 text-primary font-semibold'
                       : 'text-text-main hover:bg-slate-50'
                     }
+                    ${activeIndex === index ? 'ring-2 ring-primary/50 ring-inset' : ''}
                   `}
                 >
                   {preset.label}
@@ -258,11 +323,12 @@ export function DateRangeSelector({ value, onChange }: DateRangeSelectorProps) {
           <div className="p-3 border-b border-border-light">
             <button
               onClick={() => setShowCustom(!showCustom)}
+              aria-expanded={showCustom}
               className="flex items-center gap-2 text-sm font-medium text-text-main w-full hover:text-primary transition-colors"
             >
-              <span className="material-symbols-outlined text-[18px]">date_range</span>
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">date_range</span>
               Custom Range
-              <span className="material-symbols-outlined text-[16px] ml-auto">
+              <span className="material-symbols-outlined text-[16px] ml-auto" aria-hidden="true">
                 {showCustom ? 'expand_less' : 'expand_more'}
               </span>
             </button>

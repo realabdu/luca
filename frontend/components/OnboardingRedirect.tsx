@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@clerk/nextjs";
-import { useApiQuery, OnboardingStatus } from "@/lib/api-client";
+import { useOnboardingStatusQuery } from "@/features/onboarding/hooks/use-onboarding-queries";
 
 interface OnboardingRedirectProps {
   children: React.ReactNode;
@@ -18,13 +18,8 @@ export default function OnboardingRedirect({ children }: OnboardingRedirectProps
   const pathname = usePathname();
   const { isLoaded, isSignedIn } = useAuth();
 
-  // Only query when authenticated
-  const canQuery = isLoaded && isSignedIn;
-
-  // Check onboarding status from Django API
-  const { data: onboardingStatus, isLoading } = useApiQuery<OnboardingStatus>(
-    canQuery ? "/onboarding/status/" : null
-  );
+  // Use new React Query hook
+  const { data: onboardingStatus, isLoading } = useOnboardingStatusQuery();
 
   // Determine if onboarding is needed
   const needsOnboarding = onboardingStatus?.status === "pending";
@@ -49,7 +44,7 @@ export default function OnboardingRedirect({ children }: OnboardingRedirectProps
 
   // Show loading state while checking onboarding status
   // But only if we're not already on a bypass path
-  if (!shouldBypass && isLoading && canQuery) {
+  if (!shouldBypass && isLoading && isLoaded && isSignedIn) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full"></div>

@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PlatformIcon } from "@/components/icons/PlatformIcons";
+import { PlatformIcon, type PlatformIconName } from "@/components/icons/PlatformIcons";
 
 interface ConnectedIntegration {
-  platform: string;
+  platform: PlatformIconName;
   accountName?: string;
 }
 
@@ -77,7 +77,7 @@ export default function OnboardingComplete({
               key={ad.platform}
               className="flex items-center gap-3 p-3 bg-emerald-50 rounded-lg border border-emerald-100"
             >
-              <PlatformIcon platform={ad.platform as any} size={24} />
+              <PlatformIcon platform={ad.platform} size={24} />
               <div className="flex-1">
                 <p className="font-medium text-text-main text-sm capitalize">
                   {ad.platform} Ads

@@ -3,12 +3,16 @@
 import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useOrganization, useAuth } from "@clerk/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import OnboardingProgress from "./OnboardingProgress";
 import StoreConnectStep from "./StoreConnectStep";
 import AdsConnectStep from "./AdsConnectStep";
 import OnboardingComplete from "./OnboardingComplete";
 import { IntegrationPlatform } from "@/types/integrations";
-import { useApiQuery, useApiMutation, OnboardingStatus, Integration } from "@/lib/api-client";
+import { useOnboardingStatusQuery, useSkipAds, useCompleteOnboarding } from "@/features/onboarding/hooks/use-onboarding-queries";
+import { useIntegrationsQuery } from "@/features/integrations/hooks/use-integrations-queries";
+import { useConnectIntegration } from "@/features/integrations/hooks/use-integrations-mutations";
+import { queryKeys } from "@/lib/query-client/query-keys";
 
 const STEPS = [
   { label: "Connect Store", description: "Primary data source" },
@@ -20,6 +24,7 @@ type AdPlatform = "snapchat" | "meta" | "google" | "tiktok";
 export default function OnboardingWizard() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const { organization, isLoaded: isOrgLoaded } = useOrganization();
   const { isLoaded, isSignedIn } = useAuth();
   const [notification, setNotification] = useState<{
@@ -31,19 +36,12 @@ export default function OnboardingWizard() {
   // Only query when authenticated AND an organization is selected
   const canQuery = isLoaded && isSignedIn && isOrgLoaded && !!organization;
 
-  // Fetch onboarding status from Django API
-  const { data: onboardingStatus } = useApiQuery<OnboardingStatus>(
-    canQuery ? '/onboarding/status/' : null
-  );
-
-  // Fetch integrations list from Django API
-  const { data: integrations } = useApiQuery<Integration[]>(
-    canQuery ? '/integrations/' : null
-  );
-
-  // Mutations using Django API
-  const skipAdsMutation = useApiMutation('/onboarding/skip-ads/', 'POST');
-  const completeMutation = useApiMutation('/onboarding/complete/', 'POST');
+  // Use new React Query hooks
+  const { data: onboardingStatus, isLoading: isLoadingStatus } = useOnboardingStatusQuery();
+  const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrationsQuery();
+  const { mutate: skipAds, isPending: isSkippingAds } = useSkipAds();
+  const { mutate: completeOnboarding, isPending: isCompleting } = useCompleteOnboarding();
+  const { mutate: connectIntegration } = useConnectIntegration();
 
   // Handle OAuth redirect messages
   useEffect(() => {
@@ -56,6 +54,9 @@ export default function OnboardingWizard() {
         message: `Successfully connected to ${connected}!`,
       });
       window.history.replaceState({}, "", "/onboarding");
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ queryKey: queryKeys.integrations.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.onboarding.all });
     } else if (error) {
       setNotification({
         type: "error",
@@ -63,7 +64,7 @@ export default function OnboardingWizard() {
       });
       window.history.replaceState({}, "", "/onboarding");
     }
-  }, [searchParams]);
+  }, [searchParams, queryClient]);
 
   // Clear notification after 5 seconds
   useEffect(() => {
@@ -81,42 +82,45 @@ export default function OnboardingWizard() {
   }, [onboardingStatus?.status, router, showComplete]);
 
   const handleConnect = (platform: IntegrationPlatform) => {
-    // Redirect to OAuth initiation endpoint
-    window.location.href = `/api/auth/${platform}`;
+    connectIntegration({ platform });
   };
 
   const handleSkipAds = async () => {
-    try {
-      await skipAdsMutation.mutate();
-      setShowComplete(true);
-    } catch {
-      setNotification({
-        type: "error",
-        message: "Failed to skip ads step. Please try again.",
-      });
-    }
+    skipAds(undefined, {
+      onSuccess: () => {
+        setShowComplete(true);
+      },
+      onError: () => {
+        setNotification({
+          type: "error",
+          message: "Failed to skip ads step. Please try again.",
+        });
+      },
+    });
   };
 
   const handleComplete = async () => {
-    try {
-      await completeMutation.mutate();
-      setShowComplete(true);
-    } catch {
-      setNotification({
-        type: "error",
-        message: "Failed to complete onboarding. Please try again.",
-      });
-    }
+    completeOnboarding(undefined, {
+      onSuccess: () => {
+        setShowComplete(true);
+      },
+      onError: () => {
+        setNotification({
+          type: "error",
+          message: "Failed to complete onboarding. Please try again.",
+        });
+      },
+    });
   };
 
   // Derive current state from integrations
   const sallaIntegration = integrations?.find(
-    (i) => i.platform === "salla" && i.is_connected
+    (i) => i.platform === "salla" && i.isConnected
   );
   const connectedAds = integrations?.filter(
     (i) =>
       ["snapchat", "meta", "google", "tiktok"].includes(i.platform) &&
-      i.is_connected
+      i.isConnected
   ) || [];
 
   const storeConnected = !!sallaIntegration;
@@ -142,7 +146,7 @@ export default function OnboardingWizard() {
   }
 
   // Loading data state
-  if (onboardingStatus === undefined || integrations === undefined) {
+  if (isLoadingStatus || isLoadingIntegrations) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full"></div>
@@ -198,24 +202,24 @@ export default function OnboardingWizard() {
         {showComplete ? (
           <OnboardingComplete
             storeConnected={storeConnected}
-            storeName={sallaIntegration?.account_name}
+            storeName={sallaIntegration?.accountName}
             connectedAds={connectedAds.map((a) => ({
               platform: a.platform,
-              accountName: a.account_name,
+              accountName: a.accountName,
             }))}
             skippedAds={connectedAds.length === 0}
           />
         ) : currentStep === 1 ? (
           <StoreConnectStep
             sallaConnected={storeConnected}
-            sallaAccountName={sallaIntegration?.account_name}
+            sallaAccountName={sallaIntegration?.accountName}
             onConnect={handleConnect}
           />
         ) : (
           <AdsConnectStep
             connectedPlatforms={connectedAds.map((a) => ({
               platform: a.platform as AdPlatform,
-              accountName: a.account_name,
+              accountName: a.accountName,
             }))}
             onConnect={handleConnect}
             onSkip={handleSkipAds}

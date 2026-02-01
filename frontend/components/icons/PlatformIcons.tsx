@@ -2,7 +2,8 @@ import { IntegrationPlatform } from "@/types/integrations";
 import { MetaLogo, TiktokLogo, GoogleLogo, SnapchatLogo } from "@phosphor-icons/react";
 
 // Extended platform type to include Luca branding
-type ExtendedPlatform = IntegrationPlatform | "luca";
+export type PlatformIconName = IntegrationPlatform | "luca";
+type ExtendedPlatform = PlatformIconName;
 
 interface PlatformIconProps {
   platform: ExtendedPlatform;
