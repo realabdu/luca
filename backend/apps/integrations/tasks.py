@@ -5,14 +5,15 @@ import logging
 from datetime import date, timedelta
 
 from celery import shared_task
+from django.db import models
 from django.utils import timezone
 
 from apps.accounts.models import Organization
 from apps.integrations.models import Integration, SyncLog
 from apps.integrations.services.platforms import get_platform_client, ShopifyClient
 from apps.campaigns.models import Campaign
-from apps.analytics.models import AdSpendDaily, DailyMetrics
-from apps.orders.models import Order
+from apps.analytics.models import AdSpendDaily, DailyMetrics, Expense
+from apps.orders.models import Order, Refund
 
 logger = logging.getLogger(__name__)
 
@@ -189,12 +190,92 @@ def calculate_daily_metrics():
     logger.info("Triggered daily metrics calculation for all organizations")
 
 
+def get_expenses_for_date(organization, target_date: date) -> tuple:
+    """
+    Get total expenses for a specific date.
+    Includes one-time expenses on this date and recurring expenses.
+
+    Returns tuple of (total_expenses, expenses_breakdown)
+    """
+    from decimal import Decimal
+
+    expenses_breakdown = {}
+    total_expenses = Decimal("0")
+
+    # One-time expenses on this date
+    one_time_expenses = Expense.objects.filter(
+        organization=organization,
+        expense_date=target_date,
+        recurrence=Expense.RecurrenceType.ONE_TIME,
+        is_active=True,
+    )
+
+    for exp in one_time_expenses:
+        total_expenses += exp.amount
+        exp_type = exp.expense_type
+        if exp_type not in expenses_breakdown:
+            expenses_breakdown[exp_type] = Decimal("0")
+        expenses_breakdown[exp_type] += exp.amount
+
+    # Daily recurring expenses (started on or before this date)
+    daily_expenses = Expense.objects.filter(
+        organization=organization,
+        expense_date__lte=target_date,
+        recurrence=Expense.RecurrenceType.DAILY,
+        is_active=True,
+    ).filter(
+        # Either no end date or end date >= target_date
+        models.Q(recurrence_end_date__isnull=True) |
+        models.Q(recurrence_end_date__gte=target_date)
+    )
+
+    for exp in daily_expenses:
+        total_expenses += exp.amount
+        exp_type = exp.expense_type
+        if exp_type not in expenses_breakdown:
+            expenses_breakdown[exp_type] = Decimal("0")
+        expenses_breakdown[exp_type] += exp.amount
+
+    # Monthly recurring expenses
+    monthly_expenses = Expense.objects.filter(
+        organization=organization,
+        expense_date__day=target_date.day,
+        expense_date__lte=target_date,
+        recurrence=Expense.RecurrenceType.MONTHLY,
+        is_active=True,
+    ).filter(
+        models.Q(recurrence_end_date__isnull=True) |
+        models.Q(recurrence_end_date__gte=target_date)
+    )
+
+    for exp in monthly_expenses:
+        total_expenses += exp.amount
+        exp_type = exp.expense_type
+        if exp_type not in expenses_breakdown:
+            expenses_breakdown[exp_type] = Decimal("0")
+        expenses_breakdown[exp_type] += exp.amount
+
+    # Convert breakdown to float for JSON serialization
+    expenses_breakdown = {k: float(v) for k, v in expenses_breakdown.items()}
+
+    return total_expenses, expenses_breakdown
+
+
 @shared_task
 def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     """
     Calculate daily metrics for a single organization.
     Aggregates orders from all sources (Salla, Shopify, etc.)
+
+    Calculations:
+    - Gross Revenue = sum of order totals placed this day
+    - Total Refunds = sum of refunds processed this day (by refund date)
+    - Total Sales = Gross Revenue - Total Refunds
+    - Total Expenses = one-time + recurring expenses for this day
+    - Net Profit = Total Sales - Total Expenses - Ad Spend
     """
+    from django.db import models as django_models
+
     try:
         organization = Organization.objects.get(id=organization_id)
     except Organization.DoesNotExist:
@@ -202,17 +283,17 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
 
     target_date = date.fromisoformat(date_str)
 
-    # Get orders for the day
+    # 1. Gross revenue from orders placed this day
     orders = Order.objects.filter(
         organization=organization,
         order_date__date=target_date,
         status__in=["completed", "paid"],
     )
 
-    revenue = sum(o.total_amount for o in orders)
+    gross_revenue = sum(o.total_amount for o in orders)
     orders_count = orders.count()
     new_customers = orders.filter(is_new_customer=True).count()
-    avg_order_value = revenue / orders_count if orders_count > 0 else 0
+    avg_order_value = gross_revenue / orders_count if orders_count > 0 else 0
 
     # Calculate revenue breakdown by source
     revenue_by_source = {}
@@ -222,7 +303,20 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
             revenue_by_source[source] = 0
         revenue_by_source[source] += float(order.total_amount)
 
-    # Get ad spend for the day
+    # 2. Refunds processed this day (by refund date, not order date)
+    refunds = Refund.objects.filter(
+        organization=organization,
+        refund_date__date=target_date,
+    )
+    total_refunds = sum(r.amount for r in refunds)
+
+    # 3. Total Sales = Gross Revenue - Refunds
+    total_sales = float(gross_revenue) - float(total_refunds)
+
+    # 4. Get expenses for this day (one-time + recurring)
+    total_expenses, expenses_breakdown = get_expenses_for_date(organization, target_date)
+
+    # 5. Get ad spend for the day
     ad_spend = AdSpendDaily.objects.filter(
         organization=organization,
         date=target_date,
@@ -233,11 +327,14 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     for s in ad_spend:
         spend_by_platform[s.platform] = float(s.spend)
 
-    # Calculate metrics
-    roas = float(revenue) / float(total_spend) if total_spend > 0 else 0
-    mer = float(revenue) / float(total_spend) if total_spend > 0 else 0
-    net_profit = float(revenue) - float(total_spend)
-    net_margin = net_profit / float(revenue) * 100 if revenue > 0 else 0
+    # 6. Net Profit = Total Sales - Expenses - Ad Spend
+    net_profit = total_sales - float(total_expenses) - float(total_spend)
+
+    # Calculate other metrics
+    # ROAS and MER are based on total_sales (revenue after refunds)
+    roas = total_sales / float(total_spend) if total_spend > 0 else 0
+    mer = total_sales / float(total_spend) if total_spend > 0 else 0
+    net_margin = net_profit / total_sales * 100 if total_sales > 0 else 0
     ncpa = float(total_spend) / new_customers if new_customers > 0 else 0
 
     # Update or create daily metrics
@@ -246,10 +343,14 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
         date=target_date,
         store_id="",
         defaults={
-            "revenue": revenue,
+            "gross_revenue": gross_revenue,
+            "revenue": total_sales,  # Now represents total_sales for backward compatibility
+            "total_refunds": total_refunds,
             "orders_count": orders_count,
             "average_order_value": avg_order_value,
             "new_customers_count": new_customers,
+            "total_expenses": total_expenses,
+            "expenses_breakdown": expenses_breakdown,
             "total_spend": total_spend,
             "spend_by_platform": spend_by_platform,
             "revenue_by_source": revenue_by_source,

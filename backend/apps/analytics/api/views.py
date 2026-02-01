@@ -19,12 +19,14 @@ from apps.analytics.models import (
     PerformanceData,
     PlatformSpend,
     Metric,
+    Expense,
 )
 from .serializers import (
     DailyMetricsSerializer,
     PerformanceDataSerializer,
     PlatformSpendSerializer,
     MetricSerializer,
+    ExpenseSerializer,
 )
 
 
@@ -60,6 +62,44 @@ class DailyMetricsViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(date__lte=end_date)
 
         return queryset.order_by("-date")
+
+
+class ExpenseViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing expenses."""
+
+    serializer_class = ExpenseSerializer
+    permission_classes = [IsOrganizationMember]
+
+    def get_queryset(self):
+        organization = get_request_organization(self.request)
+        if not organization:
+            return Expense.objects.none()
+
+        queryset = Expense.objects.filter(organization=organization)
+
+        # Filter by date range
+        start_date = self.request.query_params.get("start_date")
+        end_date = self.request.query_params.get("end_date")
+        if start_date:
+            queryset = queryset.filter(expense_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(expense_date__lte=end_date)
+
+        # Filter by expense type
+        expense_type = self.request.query_params.get("expense_type")
+        if expense_type:
+            queryset = queryset.filter(expense_type=expense_type)
+
+        # Filter by active status
+        is_active = self.request.query_params.get("is_active")
+        if is_active is not None:
+            queryset = queryset.filter(is_active=is_active.lower() == "true")
+
+        return queryset.order_by("-expense_date", "-created_at")
+
+    def perform_create(self, serializer):
+        organization = get_request_organization(self.request)
+        serializer.save(organization=organization)
 
 
 class DashboardView(OrganizationRequiredMixin, APIView):
@@ -104,27 +144,34 @@ class DashboardView(OrganizationRequiredMixin, APIView):
 
         # Calculate aggregate metrics for the period
         aggregates = daily_metrics_qs.aggregate(
-            total_revenue=Sum("revenue"),
+            total_gross_revenue=Sum("gross_revenue"),
+            total_revenue=Sum("revenue"),  # This is now total_sales
+            total_refunds=Sum("total_refunds"),
             total_orders=Sum("orders_count"),
             total_spend=Sum("total_spend"),
+            total_expenses=Sum("total_expenses"),
             total_new_customers=Sum("new_customers_count"),
         )
 
-        total_revenue = aggregates["total_revenue"] or Decimal("0")
+        total_gross_revenue = aggregates["total_gross_revenue"] or Decimal("0")
+        total_sales = aggregates["total_revenue"] or Decimal("0")  # revenue = total_sales
+        total_refunds = aggregates["total_refunds"] or Decimal("0")
         total_orders = aggregates["total_orders"] or 0
         total_spend = aggregates["total_spend"] or Decimal("0")
+        total_expenses = aggregates["total_expenses"] or Decimal("0")
         total_new_customers = aggregates["total_new_customers"] or 0
 
         # Calculate derived metrics
-        aov = total_revenue / total_orders if total_orders > 0 else Decimal("0")
-        roas = total_revenue / total_spend if total_spend > 0 else Decimal("0")
+        aov = total_sales / total_orders if total_orders > 0 else Decimal("0")
+        roas = total_sales / total_spend if total_spend > 0 else Decimal("0")
+        net_profit = total_sales - total_expenses - total_spend
 
         # Build metrics cards
         metrics_data = [
             {
                 "id": 1,
-                "label": "Total Revenue",
-                "value": f"{total_revenue:,.0f}",
+                "label": "Total Sales",
+                "value": f"{total_sales:,.0f}",
                 "unit": "SAR",
                 "trend": 0,
                 "trend_label": "",
@@ -196,6 +243,14 @@ class DashboardView(OrganizationRequiredMixin, APIView):
             "performance": performance_data,
             "platform_spend": platform_spend_data,
             "daily_metrics": DailyMetricsSerializer(today_metrics).data if today_metrics else None,
+            "summary": {
+                "total_gross_revenue": float(total_gross_revenue),
+                "total_sales": float(total_sales),
+                "total_refunds": float(total_refunds),
+                "total_expenses": float(total_expenses),
+                "total_ad_spend": float(total_spend),
+                "net_profit": float(net_profit),
+            },
             "date_range": {
                 "start_date": str(start_date),
                 "end_date": str(end_date),

@@ -21,10 +21,16 @@ class DailyMetrics(TimeStampedModel):
     store_id = models.CharField(max_length=255, blank=True, db_index=True)
 
     # Revenue data (from e-commerce)
-    revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    gross_revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    revenue = models.DecimalField(max_digits=12, decimal_places=2, default=0)  # Legacy, kept for compatibility
+    total_refunds = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     orders_count = models.IntegerField(default=0)
     average_order_value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     new_customers_count = models.IntegerField(default=0)
+
+    # Expenses data
+    total_expenses = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    expenses_breakdown = models.JSONField(default=dict, blank=True)
 
     # Ad spend data (aggregated from all platforms)
     total_spend = models.DecimalField(max_digits=12, decimal_places=2, default=0)
@@ -152,6 +158,60 @@ class PlatformSpend(TimeStampedModel):
 
     def __str__(self):
         return f"{self.organization.name} - {self.platform}: {self.percentage}%"
+
+
+class Expense(TimeStampedModel):
+    """
+    Expenses for calculating net profit.
+    Supports one-time, daily, and monthly recurring expenses.
+    """
+
+    class ExpenseType(models.TextChoices):
+        COGS = "cogs", "Cost of Goods Sold"
+        SHIPPING = "shipping", "Shipping/Fulfillment"
+        HANDLING = "handling", "Handling Fees"
+        PAYMENT_GATEWAY = "payment_gateway", "Payment Gateway Fees"
+        TAXES = "taxes", "Operational Taxes"
+        CUSTOM = "custom", "Custom Expense"
+
+    class RecurrenceType(models.TextChoices):
+        ONE_TIME = "one_time", "One-time"
+        DAILY = "daily", "Daily"
+        MONTHLY = "monthly", "Monthly"
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="expenses",
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    expense_type = models.CharField(
+        max_length=20,
+        choices=ExpenseType.choices,
+    )
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    expense_date = models.DateField(db_index=True)
+    recurrence = models.CharField(
+        max_length=20,
+        choices=RecurrenceType.choices,
+        default=RecurrenceType.ONE_TIME,
+    )
+    recurrence_end_date = models.DateField(null=True, blank=True)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = "Expense"
+        verbose_name_plural = "Expenses"
+        indexes = [
+            models.Index(fields=["organization"]),
+            models.Index(fields=["expense_date"]),
+            models.Index(fields=["organization", "expense_date"]),
+            models.Index(fields=["expense_type"]),
+        ]
+
+    def __str__(self):
+        return f"{self.organization.name} - {self.name}: {self.amount}"
 
 
 class Metric(TimeStampedModel):

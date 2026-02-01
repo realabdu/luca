@@ -11,6 +11,7 @@ from apps.campaigns.api.views import CampaignViewSet
 from apps.analytics.api.views import (
     DailyMetricsViewSet,
     DashboardView,
+    ExpenseViewSet,
 )
 from apps.attribution.api.views import (
     PixelEventViewSet,
@@ -35,6 +36,7 @@ router.register("campaigns", CampaignViewSet, basename="campaign")
 
 # Analytics
 router.register("daily-metrics", DailyMetricsViewSet, basename="dailymetrics")
+router.register("expenses", ExpenseViewSet, basename="expense")
 
 # Attribution
 router.register("pixel-events", PixelEventViewSet, basename="pixelevent")

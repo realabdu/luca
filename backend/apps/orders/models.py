@@ -66,3 +66,40 @@ class Order(TimeStampedModel):
 
     def __str__(self):
         return f"{self.external_id} - {self.total_amount} {self.currency}"
+
+
+class Refund(TimeStampedModel):
+    """
+    Refunds extracted from orders.
+    Tracked separately by refund date for accurate daily calculations.
+    """
+
+    organization = models.ForeignKey(
+        Organization,
+        on_delete=models.CASCADE,
+        related_name="refunds",
+    )
+    order = models.ForeignKey(
+        Order,
+        on_delete=models.CASCADE,
+        related_name="refunds",
+    )
+    external_id = models.CharField(max_length=255, db_index=True)
+    refund_date = models.DateTimeField(db_index=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2)
+    currency = models.CharField(max_length=3, default="SAR")
+    raw_data = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        verbose_name = "Refund"
+        verbose_name_plural = "Refunds"
+        unique_together = [("organization", "external_id")]
+        indexes = [
+            models.Index(fields=["organization"]),
+            models.Index(fields=["refund_date"]),
+            models.Index(fields=["organization", "refund_date"]),
+            models.Index(fields=["order"]),
+        ]
+
+    def __str__(self):
+        return f"Refund {self.external_id} - {self.amount} {self.currency}"

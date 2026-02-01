@@ -2,20 +2,29 @@
 
 from rest_framework import serializers
 
-from apps.analytics.models import DailyMetrics, AdSpendDaily, PerformanceData, PlatformSpend, Metric
+from apps.analytics.models import DailyMetrics, AdSpendDaily, PerformanceData, PlatformSpend, Metric, Expense
 
 
 class DailyMetricsSerializer(serializers.ModelSerializer):
+    total_sales = serializers.DecimalField(
+        max_digits=12, decimal_places=2, source="revenue", read_only=True
+    )
+
     class Meta:
         model = DailyMetrics
         fields = [
             "id",
             "date",
             "store_id",
+            "gross_revenue",
             "revenue",
+            "total_sales",
+            "total_refunds",
             "orders_count",
             "average_order_value",
             "new_customers_count",
+            "total_expenses",
+            "expenses_breakdown",
             "total_spend",
             "spend_by_platform",
             "revenue_by_source",
@@ -78,6 +87,27 @@ class MetricSerializer(serializers.ModelSerializer):
             "order",
         ]
         read_only_fields = fields
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    """Serializer for Expense model."""
+
+    class Meta:
+        model = Expense
+        fields = [
+            "id",
+            "name",
+            "description",
+            "expense_type",
+            "amount",
+            "expense_date",
+            "recurrence",
+            "recurrence_end_date",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "created_at", "updated_at"]
 
 
 class DashboardSerializer(serializers.Serializer):
