@@ -6,6 +6,12 @@ from apps.campaigns.models import Campaign
 
 
 class CampaignSerializer(serializers.ModelSerializer):
+    # Convert Decimal fields to float for frontend compatibility
+    spend = serializers.FloatField()
+    revenue = serializers.FloatField()
+    roas = serializers.FloatField()
+    cpa = serializers.FloatField()
+
     class Meta:
         model = Campaign
         fields = [
