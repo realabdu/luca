@@ -39,17 +39,22 @@ export default function OverviewContent() {
 
   const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrationsQuery();
 
+  // Helper to format Date as YYYY-MM-DD for API
+  const formatDateForApi = (date: Date): string => {
+    return date.toISOString().split('T')[0];
+  };
+
   const {
     data: dashboardData,
     isLoading: isDashboardLoading,
     error: dashboardError,
     refetch: refetchDashboard,
   } = useDashboardQuery({
-    startDate: dateRange.startDate.toISOString(),
-    endDate: dateRange.endDate.toISOString(),
+    startDate: formatDateForApi(dateRange.startDate),
+    endDate: formatDateForApi(dateRange.endDate),
     compareEnabled: dateRange.compareEnabled,
-    compareStartDate: dateRange.compareStartDate?.toISOString(),
-    compareEndDate: dateRange.compareEndDate?.toISOString(),
+    compareStartDate: dateRange.compareStartDate ? formatDateForApi(dateRange.compareStartDate) : undefined,
+    compareEndDate: dateRange.compareEndDate ? formatDateForApi(dateRange.compareEndDate) : undefined,
   });
 
   const { mutate: triggerSync, isPending: isSyncing } = useTriggerSync();

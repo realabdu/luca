@@ -5,11 +5,13 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { UserButton, useAuth } from '@clerk/nextjs';
 import { useOnboardingStatusQuery } from '@/features/onboarding/hooks/use-onboarding-queries';
+import { useCommandPalette } from '@/components/CommandPalette';
 
 const Sidebar = () => {
   const pathname = usePathname();
   const router = useRouter();
   const { isLoaded, isSignedIn } = useAuth();
+  const { openPalette } = useCommandPalette();
 
   // Use new React Query hook
   const { data: onboardingStatus } = useOnboardingStatusQuery();
@@ -89,29 +91,25 @@ const Sidebar = () => {
       <nav className="flex-1 overflow-y-auto custom-scrollbar px-3 py-5 space-y-6">
 
         {/* Search */}
-        <div className="relative">
-          <label htmlFor="sidebar-search" className="sr-only">
-            Search navigation
-          </label>
+        <button
+          type="button"
+          onClick={openPalette}
+          className="relative w-full flex items-center bg-slate-50 hover:bg-slate-100 pl-10 pr-3 py-2.5 text-sm text-text-subtle transition-all cursor-pointer"
+        >
           <span
             className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-text-subtle"
             aria-hidden="true"
           >
             search
           </span>
-          <input
-            id="sidebar-search"
-            type="text"
-            placeholder="Search..."
-            className="w-full bg-slate-50 border-0 pl-10 pr-3 py-2.5 text-sm text-text-main placeholder:text-text-subtle focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all"
-          />
+          <span>Search...</span>
           <kbd
             className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] text-text-subtle font-medium bg-white border border-border-light px-1.5 py-0.5 hidden sm:inline"
             aria-hidden="true"
           >
             /
           </kbd>
-        </div>
+        </button>
 
         {/* Core Workspaces */}
         <div className="space-y-1">
