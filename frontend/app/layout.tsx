@@ -1,10 +1,30 @@
 import type { Metadata } from "next";
+import { Inter, Manrope, IBM_Plex_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { ClerkApiProvider } from "@/components/ClerkApiProvider";
 
 // Prevent static generation - app requires Clerk auth at runtime
 export const dynamic = "force-dynamic";
-export const runtime = "edge";
+
+// Fonts loaded at build time and self-hosted by Next.js (no FOUT)
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const ibmPlexArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-ibm-plex-arabic",
+  subsets: ["arabic"],
+  weight: ["300", "400", "500", "600", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Luca - Marketing Analytics Platform",
@@ -19,41 +39,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        {/* Preconnect to Google Fonts for faster loading */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-
-        {/* Fonts loaded via CSS to avoid next/font issues on Cloudflare Edge */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-        />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@200;300;400;500;600;700;800&display=swap"
-        />
+        {/* Material Symbols still loaded via CDN (icon font, not text) */}
         <link
           rel="stylesheet"
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
         />
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
-        />
       </head>
-      <body className="font-sans antialiased selection:bg-primary/20">
-        {/* Font loading script - removes flash by waiting for fonts */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              document.body.classList.add('fonts-loading');
-              document.fonts.ready.then(() => {
-                document.body.classList.remove('fonts-loading');
-                document.body.classList.add('fonts-loaded');
-              });
-            `,
-          }}
-        />
+      <body className={`${inter.variable} ${manrope.variable} ${ibmPlexArabic.variable} font-sans antialiased selection:bg-primary/20`}>
         <ClerkApiProvider>
           {children}
         </ClerkApiProvider>

@@ -38,8 +38,8 @@
   --color-chart-4: hsl(var(--chart-4));
   --color-chart-5: hsl(var(--chart-5));
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-  --font-display: 'Manrope', sans-serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-manrope), sans-serif;
   --font-mono: 'Fira Code', monospace;
 
   --radius: 0rem; /* Square aesthetic */
@@ -156,15 +156,6 @@
   body {
     @apply font-sans antialiased bg-background text-foreground;
   }
-
-  /* Font loading - smooth transition instead of jarring swap */
-  body.fonts-loading {
-    opacity: 0;
-  }
-  body.fonts-loaded {
-    opacity: 1;
-    transition: opacity 0.1s ease-in;
-  }
   h1, h2, h3, h4, h5, h6 {
     @apply font-display font-bold tracking-tight;
   }
@@ -188,7 +179,7 @@
   /* Arabic Font Override */
   html[lang="ar"] body,
   html[lang="ar"] * {
-    font-family: 'IBM Plex Sans Arabic', sans-serif !important;
+    font-family: var(--font-ibm-plex-arabic), sans-serif !important;
   }
 }
 
