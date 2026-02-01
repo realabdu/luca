@@ -108,3 +108,6 @@ frontend/.env.production.local
 
 # Credentials (NEVER COMMIT)
 CREDENTIALS.md
+
+# Shopify CLI app folder
+luca-insights/
