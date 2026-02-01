@@ -39,9 +39,12 @@ export default function OverviewContent() {
 
   const { data: integrations, isLoading: isLoadingIntegrations } = useIntegrationsQuery();
 
-  // Helper to format Date as YYYY-MM-DD for API
+  // Helper to format Date as YYYY-MM-DD for API (uses local date to avoid timezone shift)
   const formatDateForApi = (date: Date): string => {
-    return date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
   };
 
   const {
