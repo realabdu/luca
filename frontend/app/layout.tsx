@@ -19,6 +19,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preconnect to Google Fonts for faster loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+
         {/* Fonts loaded via CSS to avoid next/font issues on Cloudflare Edge */}
         <link
           rel="stylesheet"
@@ -38,6 +42,18 @@ export default function RootLayout({
         />
       </head>
       <body className="font-sans antialiased selection:bg-primary/20">
+        {/* Font loading script - removes flash by waiting for fonts */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              document.body.classList.add('fonts-loading');
+              document.fonts.ready.then(() => {
+                document.body.classList.remove('fonts-loading');
+                document.body.classList.add('fonts-loaded');
+              });
+            `,
+          }}
+        />
         <ClerkApiProvider>
           {children}
         </ClerkApiProvider>
