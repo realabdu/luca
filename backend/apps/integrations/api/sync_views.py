@@ -1,5 +1,7 @@
 """Sync API views."""
 
+from datetime import timedelta
+
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
@@ -24,7 +26,7 @@ class SyncTriggerView(OrganizationRequiredMixin, APIView):
             return error_response
 
         force = request.data.get("force", False)
-        days = request.data.get("days", 7)
+        days = request.data.get("days", 30)  # Default to 30 days
 
         # Get all connected integrations
         integrations = Integration.objects.filter(
@@ -43,16 +45,19 @@ class SyncTriggerView(OrganizationRequiredMixin, APIView):
         for integration in integrations:
             try:
                 # Run sync synchronously for immediate feedback
-                sync_orders_for_integration(integration.id)
+                # Use .run() to call bound task directly with proper self binding
+                sync_orders_for_integration.run(integration.id, days=days)
                 synced_count += 1
             except Exception as e:
                 # Log error but continue with other integrations
                 pass
 
-        # Recalculate metrics for today
-        if synced_count > 0:
-            today = timezone.now().date()
-            calculate_daily_metrics_for_org(organization.id, str(today))
+        # Recalculate metrics for all days in the requested range
+        # Always calculate even if sync_orders didn't run (e.g., for Salla which uses webhooks)
+        today = timezone.now().date()
+        for i in range(days):
+            target_date = today - timedelta(days=i)
+            calculate_daily_metrics_for_org.run(organization.id, str(target_date))
 
         return Response({
             "success": True,

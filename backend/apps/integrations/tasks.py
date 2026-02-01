@@ -284,11 +284,15 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     target_date = date.fromisoformat(date_str)
 
     # 1. Gross revenue from orders placed this day
+    # Include various status values from different platforms:
+    # - Shopify: paid, partially_paid
+    # - Salla: completed, delivered, shipped, processing, etc.
+    # Exclude cancelled/refunded orders
+    excluded_statuses = ["cancelled", "canceled", "refunded", "voided", "failed"]
     orders = Order.objects.filter(
         organization=organization,
         order_date__date=target_date,
-        status__in=["completed", "paid"],
-    )
+    ).exclude(status__in=excluded_statuses)
 
     gross_revenue = sum(o.total_amount for o in orders)
     orders_count = orders.count()
@@ -367,11 +371,11 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
 
 
 @shared_task(bind=True, max_retries=3)
-def sync_orders_for_integration(self, integration_id: int):
+def sync_orders_for_integration(self, integration_id: int, days: int = 30):
     """
     Sync orders for a single e-commerce integration (Shopify).
 
-    On first run (no last_sync_at), syncs last 7 days.
+    On first run (no last_sync_at), syncs last `days` days (default 30).
     On subsequent runs, syncs incrementally from last_sync_at.
     """
     try:
@@ -402,8 +406,8 @@ def sync_orders_for_integration(self, integration_id: int):
         if integration.last_sync_at:
             since = integration.last_sync_at
         else:
-            # First sync: get last 7 days
-            since = timezone.now() - timedelta(days=7)
+            # First sync: get last `days` days (default 30)
+            since = timezone.now() - timedelta(days=days)
 
         # Fetch orders from Shopify
         orders_data = asyncio.run(client.get_orders(since=since))
