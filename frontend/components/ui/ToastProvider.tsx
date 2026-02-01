@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useState,
   type ReactNode,
 } from 'react';
@@ -101,9 +102,9 @@ export function ToastProvider({
   const [mounted, setMounted] = useState(false);
 
   // Ensure we're mounted before rendering portal
-  useState(() => {
+  useEffect(() => {
     setMounted(true);
-  });
+  }, []);
 
   const dismiss = useCallback((id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));

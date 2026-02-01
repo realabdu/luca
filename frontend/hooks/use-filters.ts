@@ -122,33 +122,17 @@ export function useFilters<T extends Record<string, unknown>>(
   );
 
   const { isDirty, activeFilterCount } = useMemo(() => {
-    let count = 0;
-    let dirty = false;
+    const keys = Object.keys(initialValues) as (keyof T)[];
 
-    for (const key of Object.keys(initialValues) as (keyof T)[]) {
-      const currentValue = filters[key];
-      const initialValue = initialValues[key];
+    const isDirty = keys.some((key) => filters[key] !== initialValues[key]);
 
-      // Check if value has changed from initial
-      const hasChanged = currentValue !== initialValue;
+    // Count filters with truthy values (empty strings, null, undefined, false don't count)
+    const activeFilterCount = keys.filter((key) => {
+      const value = filters[key];
+      return value !== undefined && value !== null && value !== '' && value !== false;
+    }).length;
 
-      if (hasChanged) {
-        dirty = true;
-      }
-
-      // Count as "active" if it has a truthy value (for counting active filters)
-      // Empty strings, null, undefined, and false don't count as active
-      if (
-        currentValue !== undefined &&
-        currentValue !== null &&
-        currentValue !== '' &&
-        currentValue !== false
-      ) {
-        count++;
-      }
-    }
-
-    return { isDirty: dirty, activeFilterCount: count };
+    return { isDirty, activeFilterCount };
   }, [filters, initialValues]);
 
   return {

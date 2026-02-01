@@ -42,16 +42,10 @@ export function IntegrationCard({
     );
   }
 
+  const cardStyles = getCardStyles(isLoading, isConnected);
+
   return (
-    <div
-      className={`group relative flex flex-col p-6 border transition-colors ${
-        isLoading
-          ? 'bg-white border-border-light'
-          : isConnected
-            ? 'bg-emerald-50/30 border-emerald-100 ring-1 ring-emerald-500/10'
-            : 'bg-white border-border-light'
-      }`}
-    >
+    <div className={`group relative flex flex-col p-6 border transition-colors ${cardStyles}`}>
       <div className="flex items-start justify-between mb-4">
         <div className="flex items-center gap-4">
           <div className="size-14 flex items-center justify-center shadow-sm border border-gray-100 bg-white p-2.5">
@@ -64,24 +58,16 @@ export function IntegrationCard({
             </p>
           </div>
         </div>
-        {isLoading ? (
-          <span className="w-16 h-6 bg-slate-100 animate-pulse" />
-        ) : isConnected ? (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-100/50 text-emerald-700 border border-emerald-200/50 shadow-sm">
-            <span className="size-2 bg-emerald-500 rounded-full" aria-hidden="true" />
-            Active
-          </span>
-        ) : null}
+        <StatusIndicator isLoading={isLoading} isConnected={isConnected} />
       </div>
 
       <p className="text-sm text-text-muted mb-6 leading-relaxed">
-        {isLoading ? (
-          <span className="block w-48 h-4 bg-slate-100 animate-pulse" />
-        ) : isConnected ? (
-          `Connected to store: ${integration?.accountName}`
-        ) : (
-          description
-        )}
+        <CardDescription
+          isLoading={isLoading}
+          isConnected={isConnected}
+          accountName={integration?.accountName}
+          description={description}
+        />
       </p>
 
       <div className="mt-auto flex items-center gap-3">
@@ -201,7 +187,7 @@ function CompactCard({
   );
 }
 
-export function ComingSoonCard({ name }: { name: string }) {
+export function ComingSoonCard({ name }: { name: string }): JSX.Element {
   return (
     <div className="group flex flex-col p-6 border border-dashed border-border-light bg-slate-50/50">
       <div className="flex items-center gap-4 mb-4 opacity-50">
@@ -225,4 +211,59 @@ export function ComingSoonCard({ name }: { name: string }) {
       </div>
     </div>
   );
+}
+
+// Helper components to avoid nested ternaries
+interface StatusIndicatorProps {
+  isLoading: boolean;
+  isConnected?: boolean;
+}
+
+function StatusIndicator({ isLoading, isConnected }: StatusIndicatorProps): JSX.Element | null {
+  if (isLoading) {
+    return <span className="w-16 h-6 bg-slate-100 animate-pulse" />;
+  }
+
+  if (isConnected) {
+    return (
+      <span className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-bold bg-emerald-100/50 text-emerald-700 border border-emerald-200/50 shadow-sm">
+        <span className="size-2 bg-emerald-500 rounded-full" aria-hidden="true" />
+        Active
+      </span>
+    );
+  }
+
+  return null;
+}
+
+interface CardDescriptionProps {
+  isLoading: boolean;
+  isConnected?: boolean;
+  accountName?: string;
+  description: string;
+}
+
+function CardDescription({
+  isLoading,
+  isConnected,
+  accountName,
+  description,
+}: CardDescriptionProps): JSX.Element | string {
+  if (isLoading) {
+    return <span className="block w-48 h-4 bg-slate-100 animate-pulse" />;
+  }
+
+  if (isConnected) {
+    return `Connected to store: ${accountName}`;
+  }
+
+  return description;
+}
+
+function getCardStyles(isLoading: boolean, isConnected?: boolean): string {
+  if (isLoading || !isConnected) {
+    return 'bg-white border-border-light';
+  }
+
+  return 'bg-emerald-50/30 border-emerald-100 ring-1 ring-emerald-500/10';
 }

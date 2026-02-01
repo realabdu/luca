@@ -27,10 +27,10 @@ const variantStyles: Record<IconButtonVariant, string> = {
     'bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500 disabled:bg-red-300',
 };
 
-const sizeStyles: Record<IconButtonSize, { button: string; icon: string }> = {
-  sm: { button: 'p-1.5', icon: 'text-lg' },
-  md: { button: 'p-2', icon: 'text-xl' },
-  lg: { button: 'p-3', icon: 'text-2xl' },
+const sizeStyles: Record<IconButtonSize, { button: string; icon: string; spinner: string }> = {
+  sm: { button: 'p-1.5', icon: 'text-lg', spinner: 'w-3.5 h-3.5' },
+  md: { button: 'p-2', icon: 'text-xl', spinner: 'w-4 h-4' },
+  lg: { button: 'p-3', icon: 'text-2xl', spinner: 'w-5 h-5' },
 };
 
 /**
@@ -81,9 +81,7 @@ export const IconButton = forwardRef<HTMLButtonElement, IconButtonProps>(
       >
         {isLoading ? (
           <span
-            className={`inline-block border-2 border-current border-t-transparent rounded-full animate-spin ${
-              size === 'sm' ? 'w-3.5 h-3.5' : size === 'lg' ? 'w-5 h-5' : 'w-4 h-4'
-            }`}
+            className={`inline-block border-2 border-current border-t-transparent rounded-full animate-spin ${styles.spinner}`}
             aria-hidden="true"
           />
         ) : (

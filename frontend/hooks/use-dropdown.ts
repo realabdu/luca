@@ -25,9 +25,9 @@ export interface UseDropdownReturn {
   /** Set the open state directly */
   setIsOpen: (isOpen: boolean) => void;
   /** Ref to attach to the dropdown container element */
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  containerRef: React.RefObject<HTMLDivElement>;
   /** Ref to attach to the trigger element */
-  triggerRef: React.RefObject<HTMLButtonElement | null>;
+  triggerRef: React.RefObject<HTMLButtonElement>;
   /** Props to spread on the trigger button */
   triggerProps: {
     onClick: () => void;
@@ -67,8 +67,8 @@ export function useDropdown(options: UseDropdownOptions = {}): UseDropdownReturn
   } = options;
 
   const [isOpen, setIsOpenState] = useState(defaultOpen);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null!);
+  const triggerRef = useRef<HTMLButtonElement>(null!);
 
   const setIsOpen = useCallback(
     (newOpen: boolean) => {

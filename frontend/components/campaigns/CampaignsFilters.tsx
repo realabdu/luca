@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useCallback } from 'react';
+import { useDropdown } from '@/hooks/use-dropdown';
 import type { CampaignStatus } from '@/features/campaigns/domain/types';
 
 type StatusFilter = CampaignStatus | undefined;
@@ -100,36 +101,15 @@ function FilterDropdown<T>({
   icon,
   placeholder,
 }: FilterDropdownProps<T>) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isOpen, setIsOpen] = useState(false);
+  const { isOpen, close, containerRef, triggerProps } = useDropdown();
 
-  // Close on click outside
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  // Close on Escape
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen]);
+  const handleSelect = useCallback(
+    (optionValue: T) => {
+      onChange(optionValue);
+      close();
+    },
+    [onChange, close]
+  );
 
   const selectedLabel = options.find((o) => o.value === value)?.label || placeholder;
   const isActive = value !== undefined;
@@ -137,9 +117,7 @@ function FilterDropdown<T>({
   return (
     <div className="relative" ref={containerRef}>
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        aria-expanded={isOpen}
-        aria-haspopup="listbox"
+        {...triggerProps}
         className={`flex items-center gap-2 border px-3 py-2.5 text-sm font-medium transition-all ${
           isActive
             ? 'border-primary bg-primary/5 text-primary'
@@ -164,10 +142,7 @@ function FilterDropdown<T>({
               <button
                 role="option"
                 aria-selected={value === option.value}
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
+                onClick={() => handleSelect(option.value)}
                 className={`w-full text-left px-4 py-2.5 text-sm hover:bg-slate-50 transition-colors ${
                   value === option.value ? 'bg-primary/10 text-primary font-medium' : 'text-text-main'
                 }`}

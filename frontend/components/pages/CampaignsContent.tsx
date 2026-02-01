@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { PageLoading, NoOrganization } from '@/components/ui';
 import { CampaignsFilters } from '@/components/campaigns/CampaignsFilters';
 import { CampaignsTable } from '@/components/campaigns/CampaignsTable';
 import { Pagination } from '@/components/campaigns/Pagination';
@@ -64,11 +65,11 @@ export default function CampaignsContent() {
   };
 
   if (isAuthLoading) {
-    return <LoadingState />;
+    return <PageLoading maxWidth="max-w-7xl" />;
   }
 
   if (showNoOrgMessage) {
-    return <NoOrgState />;
+    return <NoOrganization maxWidth="max-w-7xl" message="Please select or create an organization from the organization switcher to view your campaigns." />;
   }
 
   return (
@@ -146,33 +147,3 @@ export default function CampaignsContent() {
   );
 }
 
-function LoadingState() {
-  return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-3">
-        <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-        <p className="text-sm text-text-muted">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-function NoOrgState() {
-  return (
-    <div className="p-6 lg:p-8 max-w-7xl mx-auto flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="size-16 bg-warning/10 flex items-center justify-center">
-          <span className="material-symbols-outlined text-[32px] text-warning" aria-hidden="true">
-            domain_add
-          </span>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-text-main mb-2">No Organization Selected</h2>
-          <p className="text-sm text-text-muted max-w-md">
-            Please select or create an organization from the organization switcher to view your campaigns.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}

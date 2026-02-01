@@ -13,7 +13,7 @@ export interface IconProps {
   className?: string;
   /** Custom aria-label for standalone icons (not needed when used inside buttons with aria-label) */
   'aria-label'?: string;
-  /** Whether to hide from screen readers (default: true, as icons are usually decorative) */
+  /** Whether to hide from screen readers. Defaults to true when no aria-label, false when aria-label provided */
   'aria-hidden'?: boolean;
 }
 
@@ -49,8 +49,13 @@ export function Icon({
   filled = false,
   className = '',
   'aria-label': ariaLabel,
-  'aria-hidden': ariaHidden = true,
+  'aria-hidden': ariaHidden,
 }: IconProps) {
+  // If aria-label is provided, icon is meaningful (not hidden)
+  // Otherwise, default to hidden (decorative)
+  const isDecorative = !ariaLabel;
+  const hidden = ariaHidden ?? isDecorative;
+
   return (
     <span
       className={`
@@ -62,7 +67,7 @@ export function Icon({
         fontVariationSettings: filled ? "'FILL' 1" : "'FILL' 0",
       }}
       aria-label={ariaLabel}
-      aria-hidden={ariaLabel ? undefined : ariaHidden}
+      aria-hidden={hidden}
       role={ariaLabel ? 'img' : undefined}
     >
       {name}

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { PageLoading, NoOrganization } from '@/components/ui';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid';
 import { ChartsSection } from '@/components/dashboard/ChartsSection';
@@ -157,11 +158,11 @@ export default function OverviewContent() {
   const error = dashboardError ? (dashboardError as Error).message : null;
 
   if (isAuthLoading) {
-    return <LoadingState />;
+    return <PageLoading />;
   }
 
   if (showNoOrgMessage) {
-    return <NoOrgState />;
+    return <NoOrganization />;
   }
 
   if (isLoadingIntegrations) {
@@ -227,30 +228,6 @@ export default function OverviewContent() {
           {dashboardData.fromCache && <span> &middot; Data refreshes automatically every 15 minutes</span>}
         </div>
       )}
-    </div>
-  );
-}
-
-function LoadingState() {
-  return (
-    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin size-8 border-2 border-primary border-t-transparent rounded-full" />
-      </div>
-    </div>
-  );
-}
-
-function NoOrgState() {
-  return (
-    <div className="p-6 lg:p-8 max-w-[1600px] mx-auto">
-      <div className="flex flex-col items-center justify-center min-h-[400px] text-center">
-        <div className="size-16 bg-slate-100 flex items-center justify-center mb-4">
-          <span className="material-symbols-outlined text-[32px] text-text-muted" aria-hidden="true">business</span>
-        </div>
-        <h2 className="text-xl font-bold text-text-main mb-2">No Organization Selected</h2>
-        <p className="text-text-muted mb-4">Please select or create an organization to continue.</p>
-      </div>
     </div>
   );
 }

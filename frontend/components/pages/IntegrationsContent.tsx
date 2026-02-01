@@ -1,18 +1,18 @@
-"use client";
+'use client';
 
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { useAuthGuard } from "@/hooks/use-auth-guard";
-import { IntegrationPlatform } from "@/types/integrations";
-import { PlatformIcon, PLATFORM_COLORS } from "@/components/icons/PlatformIcons";
-import { SetupStepper } from "@/components/integrations/SetupStepper";
-import { IntegrationCard, ComingSoonCard } from "@/components/integrations/IntegrationCard";
-import { ConnectionHealthTable } from "@/components/integrations/ConnectionHealthTable";
-import { DisconnectDialog } from "@/components/integrations/DisconnectDialog";
-import { useIntegrationsQuery } from "@/features/integrations/hooks/use-integrations-queries";
-import { useDisconnectIntegration, useConnectIntegration } from "@/features/integrations/hooks/use-integrations-mutations";
-import { queryKeys } from "@/lib/query-client/query-keys";
+import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { PageLoading, NoOrganization } from '@/components/ui';
+import { IntegrationPlatform } from '@/types/integrations';
+import { SetupStepper } from '@/components/integrations/SetupStepper';
+import { IntegrationCard, ComingSoonCard } from '@/components/integrations/IntegrationCard';
+import { ConnectionHealthTable } from '@/components/integrations/ConnectionHealthTable';
+import { DisconnectDialog } from '@/components/integrations/DisconnectDialog';
+import { useIntegrationsQuery } from '@/features/integrations/hooks/use-integrations-queries';
+import { useDisconnectIntegration, useConnectIntegration } from '@/features/integrations/hooks/use-integrations-mutations';
+import { queryKeys } from '@/lib/query-client/query-keys';
 
 const PLATFORM_DISPLAY: Record<IntegrationPlatform, { name: string; description: string; category: "ecommerce" | "ads" }> = {
   salla: { name: "Salla", description: "Saudi Arabia's leading e-commerce platform", category: "ecommerce" },
@@ -99,11 +99,11 @@ export default function IntegrationsContent() {
   const adsConnectedCount = connectedCount - (sallaConnected ? 1 : 0) - (shopifyConnected ? 1 : 0);
 
   if (isAuthLoading) {
-    return <LoadingState />;
+    return <PageLoading maxWidth="max-w-[1200px]" />;
   }
 
   if (showNoOrgMessage) {
-    return <NoOrgState />;
+    return <NoOrganization maxWidth="max-w-[1200px]" message="Please select or create an organization from the organization switcher to manage your integrations." />;
   }
 
   return (
@@ -189,29 +189,3 @@ export default function IntegrationsContent() {
   );
 }
 
-function LoadingState() {
-  return (
-    <div className="p-8 max-w-[1200px] mx-auto flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-3">
-        <span className="material-symbols-outlined text-[32px] text-text-muted animate-spin" aria-hidden="true">progress_activity</span>
-        <p className="text-sm text-text-muted">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-function NoOrgState() {
-  return (
-    <div className="p-8 max-w-[1200px] mx-auto flex items-center justify-center min-h-[400px]">
-      <div className="flex flex-col items-center gap-4 text-center">
-        <div className="size-16 bg-amber-50 flex items-center justify-center">
-          <span className="material-symbols-outlined text-[32px] text-amber-600" aria-hidden="true">domain_add</span>
-        </div>
-        <div>
-          <h2 className="text-xl font-bold text-text-main mb-2">No Organization Selected</h2>
-          <p className="text-sm text-text-muted max-w-md">Please select or create an organization from the organization switcher to manage your integrations.</p>
-        </div>
-      </div>
-    </div>
-  );
-}
