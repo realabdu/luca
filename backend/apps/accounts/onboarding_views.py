@@ -1,57 +1,56 @@
 """Onboarding API views."""
 
 from django.utils import timezone
-from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.permissions import IsOrganizationMember, IsOrganizationAdmin
+from apps.core.permissions import (
+    IsOrganizationMember,
+    IsOrganizationAdmin,
+    OrganizationRequiredMixin,
+)
 from apps.integrations.models import Integration
 
 
-class OnboardingStatusView(APIView):
+STORE_PLATFORMS = {"salla", "shopify"}
+ADS_PLATFORMS = {"meta", "google", "tiktok", "snapchat"}
+
+
+class OnboardingStatusView(OrganizationRequiredMixin, APIView):
     """Get onboarding status for the current organization."""
 
     permission_classes = [IsOrganizationMember]
 
     def get(self, request):
-        organization = request.organization
-        if not organization:
-            return Response(
-                {"error": "No organization context"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        organization, error_response = self.get_organization_or_error(request)
+        if error_response:
+            return error_response
 
-        # Get connected integrations
-        integrations = Integration.objects.filter(
-            organization=organization,
-            is_connected=True,
-        ).values_list("platform", flat=True)
-
-        has_store = any(p in ["salla", "shopify"] for p in integrations)
-        has_ads = any(p in ["meta", "google", "tiktok", "snapchat"] for p in integrations)
+        integrations = set(
+            Integration.objects.filter(
+                organization=organization,
+                is_connected=True,
+            ).values_list("platform", flat=True)
+        )
 
         return Response({
             "status": organization.onboarding_status,
             "completed_at": organization.onboarding_completed_at,
-            "has_store_connected": has_store,
-            "has_ads_connected": has_ads,
+            "has_store_connected": bool(integrations & STORE_PLATFORMS),
+            "has_ads_connected": bool(integrations & ADS_PLATFORMS),
             "connected_integrations": list(integrations),
         })
 
 
-class CompleteOnboardingView(APIView):
+class CompleteOnboardingView(OrganizationRequiredMixin, APIView):
     """Mark onboarding as complete."""
 
     permission_classes = [IsOrganizationAdmin]
 
     def post(self, request):
-        organization = request.organization
-        if not organization:
-            return Response(
-                {"error": "No organization context"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        organization, error_response = self.get_organization_or_error(request)
+        if error_response:
+            return error_response
 
         organization.onboarding_status = "completed"
         organization.onboarding_completed_at = timezone.now()

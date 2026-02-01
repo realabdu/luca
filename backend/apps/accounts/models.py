@@ -47,10 +47,6 @@ class User(AbstractBaseUser, TimeStampedModel):
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
-        indexes = [
-            models.Index(fields=["clerk_id"]),
-            models.Index(fields=["email"]),
-        ]
 
     def __str__(self):
         return self.email
@@ -99,8 +95,6 @@ class Organization(TimeStampedModel):
         verbose_name = "Organization"
         verbose_name_plural = "Organizations"
         indexes = [
-            models.Index(fields=["slug"]),
-            models.Index(fields=["clerk_org_id"]),
             models.Index(fields=["onboarding_status"]),
         ]
 
@@ -149,11 +143,6 @@ class Membership(TimeStampedModel):
         verbose_name = "Membership"
         verbose_name_plural = "Memberships"
         unique_together = [("user", "organization")]
-        indexes = [
-            models.Index(fields=["user"]),
-            models.Index(fields=["organization"]),
-            models.Index(fields=["user", "organization"]),
-        ]
 
     def __str__(self):
         return f"{self.user.email} - {self.organization.name} ({self.role})"
@@ -185,10 +174,6 @@ class APIKey(TimeStampedModel):
     class Meta:
         verbose_name = "API Key"
         verbose_name_plural = "API Keys"
-        indexes = [
-            models.Index(fields=["organization"]),
-            models.Index(fields=["key_hash"]),
-        ]
 
     def __str__(self):
         return f"{self.name} ({self.key_prefix}...)"

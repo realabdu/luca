@@ -8,26 +8,27 @@ from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.core.permissions import IsOrganizationMember
+from apps.core.permissions import IsOrganizationMember, OrganizationRequiredMixin
 from apps.integrations.services.oauth import OAuthService
 from apps.integrations.models import Integration
 
 logger = logging.getLogger(__name__)
 
+# Platform categories for onboarding status transitions
+STORE_PLATFORMS = {"salla", "shopify"}
+AD_PLATFORMS = {"meta", "google", "tiktok", "snapchat"}
 
-class OAuthConnectView(APIView):
+
+class OAuthConnectView(OrganizationRequiredMixin, APIView):
     """Start OAuth flow for a platform."""
 
     permission_classes = [IsOrganizationMember]
 
     def get(self, request, platform):
         """Generate authorization URL and redirect."""
-        organization = request.organization
-        if not organization:
-            return Response(
-                {"error": "No organization context"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        organization, error_response = self.get_organization_or_error(request)
+        if error_response:
+            return error_response
 
         try:
             oauth_service = OAuthService(platform)
@@ -93,14 +94,7 @@ class OAuthCallbackView(APIView):
             )
 
             # Update organization onboarding status
-            if platform in ["salla", "shopify"]:
-                if organization.onboarding_status == "pending":
-                    organization.onboarding_status = "store_connected"
-                    organization.save(update_fields=["onboarding_status", "updated_at"])
-            elif platform in ["meta", "google", "tiktok", "snapchat"]:
-                if organization.onboarding_status in ["pending", "store_connected"]:
-                    organization.onboarding_status = "ads_connected"
-                    organization.save(update_fields=["onboarding_status", "updated_at"])
+            self._update_onboarding_status(organization, platform)
 
             return redirect(f"{settings.FRONTEND_URL}/integrations?connected={platform}")
 
@@ -113,32 +107,37 @@ class OAuthCallbackView(APIView):
 
     def _extract_account_id(self, platform: str, tokens: dict) -> str:
         """Extract account ID from tokens response."""
-        if platform == "salla":
-            return tokens.get("user", {}).get("merchant", {}).get("id", "")
-        elif platform == "shopify":
-            return tokens.get("shop", "")
-        elif platform == "meta":
-            return tokens.get("ad_accounts", [{}])[0].get("id", "")
-        elif platform == "google":
-            return tokens.get("customer_id", "")
-        elif platform == "tiktok":
-            return str(tokens.get("advertiser_ids", [""])[0])
-        elif platform == "snapchat":
-            return tokens.get("organization_id", "")
-        return ""
+        extractors = {
+            "salla": lambda t: t.get("user", {}).get("merchant", {}).get("id", ""),
+            "shopify": lambda t: t.get("shop", ""),
+            "meta": lambda t: t.get("ad_accounts", [{}])[0].get("id", ""),
+            "google": lambda t: t.get("customer_id", ""),
+            "tiktok": lambda t: str(t.get("advertiser_ids", [""])[0]),
+            "snapchat": lambda t: t.get("organization_id", ""),
+        }
+        extractor = extractors.get(platform)
+        return extractor(tokens) if extractor else ""
 
     def _extract_account_name(self, platform: str, tokens: dict, shop: str = None) -> str:
         """Extract account name from tokens response."""
-        if platform == "salla":
-            return tokens.get("user", {}).get("merchant", {}).get("name", "Salla Store")
-        elif platform == "shopify":
-            return shop or "Shopify Store"
-        elif platform == "meta":
-            return tokens.get("ad_accounts", [{}])[0].get("name", "Meta Ads Account")
-        elif platform == "google":
-            return tokens.get("descriptive_name", "Google Ads Account")
-        elif platform == "tiktok":
-            return tokens.get("advertiser_name", "TikTok Ads Account")
-        elif platform == "snapchat":
-            return tokens.get("organization_name", "Snapchat Ads Account")
-        return f"{platform.title()} Account"
+        extractors = {
+            "salla": lambda t: t.get("user", {}).get("merchant", {}).get("name", "Salla Store"),
+            "shopify": lambda t: shop or "Shopify Store",
+            "meta": lambda t: t.get("ad_accounts", [{}])[0].get("name", "Meta Ads Account"),
+            "google": lambda t: t.get("descriptive_name", "Google Ads Account"),
+            "tiktok": lambda t: t.get("advertiser_name", "TikTok Ads Account"),
+            "snapchat": lambda t: t.get("organization_name", "Snapchat Ads Account"),
+        }
+        extractor = extractors.get(platform)
+        return extractor(tokens) if extractor else f"{platform.title()} Account"
+
+    def _update_onboarding_status(self, organization, platform: str) -> None:
+        """Update organization onboarding status based on connected platform."""
+        current_status = organization.onboarding_status
+
+        if platform in STORE_PLATFORMS and current_status == "pending":
+            organization.onboarding_status = "store_connected"
+            organization.save(update_fields=["onboarding_status", "updated_at"])
+        elif platform in AD_PLATFORMS and current_status in ("pending", "store_connected"):
+            organization.onboarding_status = "ads_connected"
+            organization.save(update_fields=["onboarding_status", "updated_at"])

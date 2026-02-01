@@ -58,10 +58,8 @@ class Campaign(TimeStampedModel):
         verbose_name_plural = "Campaigns"
         unique_together = [("organization", "external_id")]
         indexes = [
-            models.Index(fields=["organization"]),
             models.Index(fields=["platform"]),
             models.Index(fields=["status"]),
-            models.Index(fields=["external_id"]),
             models.Index(fields=["organization", "platform"]),
         ]
 

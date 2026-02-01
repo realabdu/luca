@@ -2,35 +2,33 @@
 
 from rest_framework import viewsets
 
-from apps.core.permissions import IsOrganizationMember
+from apps.core.permissions import IsOrganizationMember, get_request_organization
 from apps.orders.models import Order
 from .serializers import OrderSerializer
 
 
 class OrderViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for viewing orders.
-    """
+    """ViewSet for viewing orders."""
 
     serializer_class = OrderSerializer
     permission_classes = [IsOrganizationMember]
 
     def get_queryset(self):
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return Order.objects.none()
 
         queryset = Order.objects.filter(organization=organization)
 
-        # Filter by source
-        source = self.request.query_params.get("source")
-        if source:
-            queryset = queryset.filter(source=source)
+        # Apply filters from query params
+        filters = {
+            "source": self.request.query_params.get("source"),
+            "status": self.request.query_params.get("status"),
+        }
 
-        # Filter by status
-        status = self.request.query_params.get("status")
-        if status:
-            queryset = queryset.filter(status=status)
+        for field, value in filters.items():
+            if value:
+                queryset = queryset.filter(**{field: value})
 
         # Filter by date range
         start_date = self.request.query_params.get("start_date")

@@ -5,8 +5,8 @@ from rest_framework import viewsets, status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 
-from apps.core.permissions import IsOrganizationMember
-from apps.accounts.models import APIKey, Organization
+from apps.core.permissions import IsOrganizationMember, get_request_organization
+from apps.accounts.models import APIKey
 from apps.attribution.models import PixelEvent, ClickTracking, AttributionEvent
 from .serializers import (
     PixelEventSerializer,
@@ -33,7 +33,7 @@ class PixelEventViewSet(viewsets.ModelViewSet):
         return PixelEventSerializer
 
     def get_queryset(self):
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return PixelEvent.objects.none()
         return PixelEvent.objects.filter(organization=organization).order_by("-timestamp")
@@ -88,30 +88,26 @@ class PixelEventViewSet(viewsets.ModelViewSet):
 
 
 class ClickTrackingViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for click tracking data.
-    """
+    """ViewSet for click tracking data."""
 
     serializer_class = ClickTrackingSerializer
     permission_classes = [IsOrganizationMember]
 
     def get_queryset(self):
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return ClickTracking.objects.none()
         return ClickTracking.objects.filter(organization=organization).order_by("-timestamp")
 
 
 class AttributionEventViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for attribution events.
-    """
+    """ViewSet for attribution events."""
 
     serializer_class = AttributionEventSerializer
     permission_classes = [IsOrganizationMember]
 
     def get_queryset(self):
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return AttributionEvent.objects.none()
 

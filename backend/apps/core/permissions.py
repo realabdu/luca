@@ -1,6 +1,40 @@
 """Custom permissions for the API."""
 
-from rest_framework import permissions
+from rest_framework import permissions, status
+from rest_framework.response import Response
+
+
+NO_ORG_ERROR_RESPONSE = Response(
+    {"error": "No organization context"},
+    status=status.HTTP_400_BAD_REQUEST,
+)
+
+
+def get_request_organization(request):
+    """Get organization from request, returning None if not present."""
+    return getattr(request, "organization", None)
+
+
+class OrganizationRequiredMixin:
+    """
+    Mixin that provides a helper method for requiring organization context.
+
+    Use in views that need to validate organization context and return
+    a consistent error response when it's missing.
+    """
+
+    def get_organization_or_error(self, request):
+        """
+        Get organization from request or return error response.
+
+        Returns:
+            tuple: (organization, None) if organization exists
+                   (None, Response) if organization is missing
+        """
+        organization = get_request_organization(request)
+        if not organization:
+            return None, NO_ORG_ERROR_RESPONSE
+        return organization, None
 
 
 class IsOrganizationMember(permissions.BasePermission):

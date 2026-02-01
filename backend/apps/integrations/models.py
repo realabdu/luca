@@ -53,10 +53,8 @@ class Integration(TimeStampedModel):
         verbose_name_plural = "Integrations"
         unique_together = [("organization", "platform")]
         indexes = [
-            models.Index(fields=["organization"]),
             models.Index(fields=["platform"]),
             models.Index(fields=["is_connected"]),
-            models.Index(fields=["organization", "platform"]),
             models.Index(fields=["account_id"]),
         ]
 
@@ -113,9 +111,6 @@ class OAuthState(TimeStampedModel):
     class Meta:
         verbose_name = "OAuth State"
         verbose_name_plural = "OAuth States"
-        indexes = [
-            models.Index(fields=["state"]),
-        ]
 
     def __str__(self):
         return f"{self.platform} - {self.state[:8]}..."
@@ -186,8 +181,6 @@ class SyncLog(TimeStampedModel):
         verbose_name = "Sync Log"
         verbose_name_plural = "Sync Logs"
         indexes = [
-            models.Index(fields=["organization"]),
-            models.Index(fields=["integration"]),
             models.Index(fields=["status"]),
             models.Index(fields=["started_at"]),
         ]

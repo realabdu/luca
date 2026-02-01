@@ -1,27 +1,28 @@
 """Views for integrations API."""
 
-from django.utils import timezone
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.core.permissions import IsOrganizationMember, IsOrganizationAdmin
+from apps.core.permissions import (
+    IsOrganizationMember,
+    IsOrganizationAdmin,
+    get_request_organization,
+)
 from apps.integrations.models import Integration, SyncLog
 from .serializers import IntegrationSerializer, SyncLogSerializer
 
 
 class IntegrationViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for managing integrations.
-    """
+    """ViewSet for managing integrations."""
 
     serializer_class = IntegrationSerializer
     permission_classes = [IsOrganizationMember]
-    pagination_class = None  # Return plain list, not paginated
+    pagination_class = None
 
     def get_queryset(self):
         """Return integrations for the current organization."""
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return Integration.objects.none()
         return Integration.objects.filter(organization=organization)

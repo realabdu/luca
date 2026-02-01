@@ -16,30 +16,35 @@ logger = logging.getLogger(__name__)
 @dataclass
 class CampaignData:
     """Normalized campaign data."""
+
     external_id: str
     name: str
     status: str
-    spend: float
-    impressions: int
-    clicks: int
-    conversions: int
+    spend: float = 0
+    impressions: int = 0
+    clicks: int = 0
+    conversions: int = 0
 
 
 @dataclass
 class SpendData:
     """Daily spend data."""
+
     date: date
     platform: str
     account_id: str
     spend: float
     currency: str
-    impressions: int
-    clicks: int
-    conversions: int
+    impressions: int = 0
+    clicks: int = 0
+    conversions: int = 0
 
 
 class BasePlatformClient(ABC):
     """Base class for platform API clients."""
+
+    # Status mapping for normalizing platform-specific statuses
+    STATUS_MAP: dict[str, str] = {}
 
     def __init__(self, integration: Integration):
         self.integration = integration
@@ -51,19 +56,34 @@ class BasePlatformClient(ABC):
         pass
 
     @abstractmethod
-    async def get_daily_spend(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[SpendData]:
+    async def get_daily_spend(self, start_date: date, end_date: date) -> list[SpendData]:
         """Fetch daily spend data."""
         pass
+
+    def _normalize_status(self, platform_status: str) -> str:
+        """Normalize platform-specific status to standard values."""
+        return self.STATUS_MAP.get(platform_status, "Inactive")
+
+    async def _get_json(
+        self, url: str, params: dict = None, headers: dict = None
+    ) -> dict:
+        """Make a GET request and return JSON response."""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, params=params, headers=headers)
+            response.raise_for_status()
+            return response.json()
 
 
 class MetaClient(BasePlatformClient):
     """Meta (Facebook) Ads API client."""
 
     BASE_URL = "https://graph.facebook.com/v18.0"
+    STATUS_MAP = {
+        "ACTIVE": "Active",
+        "PAUSED": "Paused",
+        "DELETED": "Inactive",
+        "ARCHIVED": "Inactive",
+    }
 
     async def get_campaigns(self) -> list[CampaignData]:
         account_id = self.integration.account_id
@@ -73,31 +93,24 @@ class MetaClient(BasePlatformClient):
             "fields": "id,name,status,insights{spend,impressions,clicks,actions}",
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
+        data = await self._get_json(url, params=params)
 
-        campaigns = []
-        for campaign in data.get("data", []):
-            insights = campaign.get("insights", {}).get("data", [{}])[0]
-            campaigns.append(CampaignData(
+        return [
+            CampaignData(
                 external_id=campaign["id"],
                 name=campaign["name"],
                 status=self._normalize_status(campaign["status"]),
-                spend=float(insights.get("spend", 0)),
-                impressions=int(insights.get("impressions", 0)),
-                clicks=int(insights.get("clicks", 0)),
-                conversions=self._count_conversions(insights.get("actions", [])),
-            ))
+                spend=float(self._get_insight(campaign, "spend", 0)),
+                impressions=int(self._get_insight(campaign, "impressions", 0)),
+                clicks=int(self._get_insight(campaign, "clicks", 0)),
+                conversions=self._count_conversions(
+                    self._get_insight(campaign, "actions", [])
+                ),
+            )
+            for campaign in data.get("data", [])
+        ]
 
-        return campaigns
-
-    async def get_daily_spend(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[SpendData]:
+    async def get_daily_spend(self, start_date: date, end_date: date) -> list[SpendData]:
         account_id = self.integration.account_id
         url = f"{self.BASE_URL}/act_{account_id}/insights"
         params = {
@@ -107,36 +120,31 @@ class MetaClient(BasePlatformClient):
             "time_increment": 1,
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
+        data = await self._get_json(url, params=params)
 
-        spend_data = []
-        for day in data.get("data", []):
-            spend_data.append(SpendData(
+        return [
+            SpendData(
                 date=date.fromisoformat(day["date_start"]),
                 platform="meta",
                 account_id=account_id,
                 spend=float(day.get("spend", 0)),
-                currency="USD",  # Meta reports in account currency
+                currency="USD",
                 impressions=int(day.get("impressions", 0)),
                 clicks=int(day.get("clicks", 0)),
                 conversions=self._count_conversions(day.get("actions", [])),
-            ))
+            )
+            for day in data.get("data", [])
+        ]
 
-        return spend_data
+    @staticmethod
+    def _get_insight(campaign: dict, key: str, default):
+        """Extract a value from campaign insights."""
+        insights = campaign.get("insights", {}).get("data", [{}])[0]
+        return insights.get(key, default)
 
-    def _normalize_status(self, status: str) -> str:
-        status_map = {
-            "ACTIVE": "Active",
-            "PAUSED": "Paused",
-            "DELETED": "Inactive",
-            "ARCHIVED": "Inactive",
-        }
-        return status_map.get(status, "Inactive")
-
-    def _count_conversions(self, actions: list) -> int:
+    @staticmethod
+    def _count_conversions(actions: list) -> int:
+        """Count purchase conversions from Meta actions list."""
         for action in actions:
             if action.get("action_type") == "purchase":
                 return int(action.get("value", 0))
@@ -151,11 +159,7 @@ class GoogleClient(BasePlatformClient):
         logger.info("Fetching Google campaigns...")
         return []
 
-    async def get_daily_spend(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[SpendData]:
+    async def get_daily_spend(self, start_date: date, end_date: date) -> list[SpendData]:
         logger.info("Fetching Google daily spend...")
         return []
 
@@ -164,6 +168,11 @@ class TikTokClient(BasePlatformClient):
     """TikTok Ads API client."""
 
     BASE_URL = "https://business-api.tiktok.com/open_api/v1.3"
+    STATUS_MAP = {
+        "CAMPAIGN_STATUS_ENABLE": "Active",
+        "CAMPAIGN_STATUS_DISABLE": "Paused",
+        "CAMPAIGN_STATUS_DELETE": "Inactive",
+    }
 
     async def get_campaigns(self) -> list[CampaignData]:
         url = f"{self.BASE_URL}/campaign/get/"
@@ -173,97 +182,62 @@ class TikTokClient(BasePlatformClient):
             "fields": '["campaign_id","campaign_name","status"]',
         }
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers, params=params)
-            response.raise_for_status()
-            data = response.json()
+        data = await self._get_json(url, params=params, headers=headers)
 
-        campaigns = []
-        for campaign in data.get("data", {}).get("list", []):
-            campaigns.append(CampaignData(
+        return [
+            CampaignData(
                 external_id=campaign["campaign_id"],
                 name=campaign["campaign_name"],
                 status=self._normalize_status(campaign["status"]),
-                spend=0,
-                impressions=0,
-                clicks=0,
-                conversions=0,
-            ))
+            )
+            for campaign in data.get("data", {}).get("list", [])
+        ]
 
-        return campaigns
-
-    async def get_daily_spend(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[SpendData]:
+    async def get_daily_spend(self, start_date: date, end_date: date) -> list[SpendData]:
         logger.info("Fetching TikTok daily spend...")
         return []
-
-    def _normalize_status(self, status: str) -> str:
-        status_map = {
-            "CAMPAIGN_STATUS_ENABLE": "Active",
-            "CAMPAIGN_STATUS_DISABLE": "Paused",
-            "CAMPAIGN_STATUS_DELETE": "Inactive",
-        }
-        return status_map.get(status, "Inactive")
 
 
 class SnapchatClient(BasePlatformClient):
     """Snapchat Ads API client."""
 
     BASE_URL = "https://adsapi.snapchat.com/v1"
+    STATUS_MAP = {
+        "ACTIVE": "Active",
+        "PAUSED": "Paused",
+    }
 
     async def get_campaigns(self) -> list[CampaignData]:
         url = f"{self.BASE_URL}/adaccounts/{self.integration.account_id}/campaigns"
         headers = {"Authorization": f"Bearer {self.access_token}"}
 
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url, headers=headers)
-            response.raise_for_status()
-            data = response.json()
+        data = await self._get_json(url, headers=headers)
 
-        campaigns = []
-        for item in data.get("campaigns", []):
-            campaign = item.get("campaign", {})
-            campaigns.append(CampaignData(
-                external_id=campaign["id"],
-                name=campaign["name"],
-                status=self._normalize_status(campaign["status"]),
-                spend=0,
-                impressions=0,
-                clicks=0,
-                conversions=0,
-            ))
+        return [
+            CampaignData(
+                external_id=item.get("campaign", {}).get("id", ""),
+                name=item.get("campaign", {}).get("name", ""),
+                status=self._normalize_status(
+                    item.get("campaign", {}).get("status", "")
+                ),
+            )
+            for item in data.get("campaigns", [])
+        ]
 
-        return campaigns
-
-    async def get_daily_spend(
-        self,
-        start_date: date,
-        end_date: date,
-    ) -> list[SpendData]:
+    async def get_daily_spend(self, start_date: date, end_date: date) -> list[SpendData]:
         logger.info("Fetching Snapchat daily spend...")
         return []
 
-    def _normalize_status(self, status: str) -> str:
-        status_map = {
-            "ACTIVE": "Active",
-            "PAUSED": "Paused",
-        }
-        return status_map.get(status, "Inactive")
+
+PLATFORM_CLIENTS: dict[str, type[BasePlatformClient]] = {
+    "meta": MetaClient,
+    "google": GoogleClient,
+    "tiktok": TikTokClient,
+    "snapchat": SnapchatClient,
+}
 
 
 def get_platform_client(integration: Integration) -> Optional[BasePlatformClient]:
     """Get the appropriate client for a platform."""
-    clients = {
-        "meta": MetaClient,
-        "google": GoogleClient,
-        "tiktok": TikTokClient,
-        "snapchat": SnapchatClient,
-    }
-
-    client_class = clients.get(integration.platform)
-    if client_class:
-        return client_class(integration)
-    return None
+    client_class = PLATFORM_CLIENTS.get(integration.platform)
+    return client_class(integration) if client_class else None

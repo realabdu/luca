@@ -1,11 +1,15 @@
 """Views for campaigns API."""
 
 from django_filters import rest_framework as filters
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.core.permissions import IsOrganizationMember
+from apps.core.permissions import (
+    IsOrganizationMember,
+    OrganizationRequiredMixin,
+    get_request_organization,
+)
 from apps.campaigns.models import Campaign
 from .serializers import CampaignSerializer
 
@@ -19,10 +23,8 @@ class CampaignFilter(filters.FilterSet):
         fields = ["platform", "status"]
 
 
-class CampaignViewSet(viewsets.ReadOnlyModelViewSet):
-    """
-    ViewSet for viewing campaigns.
-    """
+class CampaignViewSet(OrganizationRequiredMixin, viewsets.ReadOnlyModelViewSet):
+    """ViewSet for viewing campaigns."""
 
     serializer_class = CampaignSerializer
     permission_classes = [IsOrganizationMember]
@@ -30,7 +32,7 @@ class CampaignViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         """Return campaigns for the current organization."""
-        organization = self.request.organization
+        organization = get_request_organization(self.request)
         if not organization:
             return Campaign.objects.none()
         return Campaign.objects.filter(organization=organization).order_by("-spend")
@@ -38,12 +40,9 @@ class CampaignViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["post"])
     def sync(self, request):
         """Trigger campaign sync for all connected ad platforms."""
-        organization = request.organization
-        if not organization:
-            return Response(
-                {"error": "No organization context"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        organization, error_response = self.get_organization_or_error(request)
+        if error_response:
+            return error_response
 
         # TODO: Trigger async sync task
         return Response({"status": "sync_triggered"})
