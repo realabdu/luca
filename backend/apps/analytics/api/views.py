@@ -171,16 +171,22 @@ class DashboardView(OrganizationRequiredMixin, APIView):
             },
         ]
 
-        # Build platform spend breakdown from revenue_by_source
+        # Build platform spend breakdown from spend_by_platform (ad platforms only)
         platform_spend_data = []
-        if today_metrics and today_metrics.revenue_by_source:
-            total = sum(today_metrics.revenue_by_source.values())
-            colors = {"shopify": "#96bf48", "salla": "#004CFF", "other": "#888888"}
-            for idx, (platform, amount) in enumerate(today_metrics.revenue_by_source.items()):
+        if today_metrics and today_metrics.spend_by_platform:
+            total = sum(today_metrics.spend_by_platform.values())
+            colors = {
+                "snapchat": "#FFFC00",
+                "meta": "#0081FB",
+                "google": "#FBBC04",
+                "tiktok": "#000000",
+            }
+            for idx, (platform, amount) in enumerate(today_metrics.spend_by_platform.items()):
                 percentage = (amount / total * 100) if total > 0 else 0
                 platform_spend_data.append({
                     "id": idx + 1,
                     "platform": platform.capitalize(),
+                    "spend": float(amount),
                     "percentage": round(percentage, 1),
                     "color": colors.get(platform.lower(), "#888888"),
                 })
