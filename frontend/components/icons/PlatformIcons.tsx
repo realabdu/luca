@@ -77,7 +77,7 @@ export function PlatformIcon({ platform, className = "", size = 24 }: PlatformIc
           alt="Shopify"
           width={size}
           height={size}
-          className={className}
+          className={`object-contain ${className}`}
         />
       );
     default:
