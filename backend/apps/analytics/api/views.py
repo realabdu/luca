@@ -165,12 +165,15 @@ class DashboardView(OrganizationRequiredMixin, APIView):
         aov = total_sales / total_orders if total_orders > 0 else Decimal("0")
         roas = total_sales / total_spend if total_spend > 0 else Decimal("0")
         net_profit = total_sales - total_expenses - total_spend
+        mer = (total_spend / total_sales * 100) if total_sales > 0 else Decimal("0")
+        net_margin = (net_profit / total_sales * 100) if total_sales > 0 else Decimal("0")
+        ncpa = total_spend / total_new_customers if total_new_customers > 0 else Decimal("0")
 
-        # Build metrics cards
+        # Build metrics cards - include all metrics the frontend expects
         metrics_data = [
             {
                 "id": 1,
-                "label": "Total Sales",
+                "label": "Total Revenue",
                 "value": f"{total_sales:,.0f}",
                 "unit": "SAR",
                 "trend": 0,
@@ -182,6 +185,42 @@ class DashboardView(OrganizationRequiredMixin, APIView):
             },
             {
                 "id": 2,
+                "label": "Total Sales",
+                "value": f"{total_sales:,.0f}",
+                "unit": "SAR",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "dollar-sign",
+                "trend_type": "neutral",
+                "color": "green",
+                "order": 2,
+            },
+            {
+                "id": 3,
+                "label": "Total Spend",
+                "value": f"{total_spend:,.0f}",
+                "unit": "SAR",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "credit-card",
+                "trend_type": "neutral",
+                "color": "red",
+                "order": 3,
+            },
+            {
+                "id": 4,
+                "label": "Net Profit",
+                "value": f"{net_profit:,.0f}",
+                "unit": "SAR",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "trending-up",
+                "trend_type": "up" if net_profit > 0 else "down" if net_profit < 0 else "neutral",
+                "color": "green" if net_profit > 0 else "red",
+                "order": 4,
+            },
+            {
+                "id": 5,
                 "label": "Total Orders",
                 "value": str(total_orders),
                 "unit": "",
@@ -190,10 +229,10 @@ class DashboardView(OrganizationRequiredMixin, APIView):
                 "icon": "shopping-cart",
                 "trend_type": "neutral",
                 "color": "blue",
-                "order": 2,
+                "order": 5,
             },
             {
-                "id": 3,
+                "id": 6,
                 "label": "Average Order Value",
                 "value": f"{aov:,.0f}",
                 "unit": "SAR",
@@ -202,10 +241,10 @@ class DashboardView(OrganizationRequiredMixin, APIView):
                 "icon": "trending-up",
                 "trend_type": "neutral",
                 "color": "purple",
-                "order": 3,
+                "order": 6,
             },
             {
-                "id": 4,
+                "id": 7,
                 "label": "New Customers",
                 "value": str(total_new_customers),
                 "unit": "",
@@ -214,7 +253,55 @@ class DashboardView(OrganizationRequiredMixin, APIView):
                 "icon": "users",
                 "trend_type": "neutral",
                 "color": "orange",
-                "order": 4,
+                "order": 7,
+            },
+            {
+                "id": 8,
+                "label": "Blended ROAS",
+                "value": f"{roas:.2f}",
+                "unit": "",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "analytics",
+                "trend_type": "up" if roas > 1 else "down" if roas < 1 else "neutral",
+                "color": "green" if roas > 1 else "red",
+                "order": 8,
+            },
+            {
+                "id": 9,
+                "label": "MER",
+                "value": f"{mer:.1f}",
+                "unit": "%",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "percent",
+                "trend_type": "up" if mer < 20 else "down" if mer > 30 else "neutral",
+                "color": "green" if mer < 20 else "red",
+                "order": 9,
+            },
+            {
+                "id": 10,
+                "label": "Net Margin",
+                "value": f"{net_margin:.0f}",
+                "unit": "%",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "percent",
+                "trend_type": "up" if net_margin > 0 else "down" if net_margin < 0 else "neutral",
+                "color": "green" if net_margin > 0 else "red",
+                "order": 10,
+            },
+            {
+                "id": 11,
+                "label": "NCPA",
+                "value": f"{ncpa:.2f}",
+                "unit": "SAR",
+                "trend": 0,
+                "trend_label": "",
+                "icon": "dollar-sign",
+                "trend_type": "neutral",
+                "color": "blue",
+                "order": 11,
             },
         ]
 
