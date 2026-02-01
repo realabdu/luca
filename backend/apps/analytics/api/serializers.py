@@ -18,6 +18,7 @@ class DailyMetricsSerializer(serializers.ModelSerializer):
             "new_customers_count",
             "total_spend",
             "spend_by_platform",
+            "revenue_by_source",
             "net_profit",
             "roas",
             "mer",

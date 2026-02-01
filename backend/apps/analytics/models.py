@@ -30,6 +30,9 @@ class DailyMetrics(TimeStampedModel):
     total_spend = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     spend_by_platform = models.JSONField(default=dict, blank=True)
 
+    # Revenue breakdown by source (salla, shopify, etc.)
+    revenue_by_source = models.JSONField(default=dict, blank=True)
+
     # Calculated metrics
     net_profit = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     roas = models.DecimalField(max_digits=8, decimal_places=2, default=0)

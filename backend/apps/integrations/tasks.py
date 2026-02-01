@@ -1,5 +1,6 @@
 """Celery tasks for integration syncing."""
 
+import asyncio
 import logging
 from datetime import date, timedelta
 
@@ -8,7 +9,7 @@ from django.utils import timezone
 
 from apps.accounts.models import Organization
 from apps.integrations.models import Integration, SyncLog
-from apps.integrations.services.platforms import get_platform_client
+from apps.integrations.services.platforms import get_platform_client, ShopifyClient
 from apps.campaigns.models import Campaign
 from apps.analytics.models import AdSpendDaily, DailyMetrics
 from apps.orders.models import Order
@@ -192,6 +193,7 @@ def calculate_daily_metrics():
 def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     """
     Calculate daily metrics for a single organization.
+    Aggregates orders from all sources (Salla, Shopify, etc.)
     """
     try:
         organization = Organization.objects.get(id=organization_id)
@@ -211,6 +213,14 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     orders_count = orders.count()
     new_customers = orders.filter(is_new_customer=True).count()
     avg_order_value = revenue / orders_count if orders_count > 0 else 0
+
+    # Calculate revenue breakdown by source
+    revenue_by_source = {}
+    for order in orders:
+        source = order.source or "unknown"
+        if source not in revenue_by_source:
+            revenue_by_source[source] = 0
+        revenue_by_source[source] += float(order.total_amount)
 
     # Get ad spend for the day
     ad_spend = AdSpendDaily.objects.filter(
@@ -242,6 +252,7 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
             "new_customers_count": new_customers,
             "total_spend": total_spend,
             "spend_by_platform": spend_by_platform,
+            "revenue_by_source": revenue_by_source,
             "net_profit": net_profit,
             "roas": roas,
             "mer": mer,
@@ -252,6 +263,92 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     )
 
     logger.info(f"Calculated daily metrics for {organization} on {target_date}")
+
+
+@shared_task(bind=True, max_retries=3)
+def sync_orders_for_integration(self, integration_id: int):
+    """
+    Sync orders for a single e-commerce integration (Shopify).
+
+    On first run (no last_sync_at), syncs last 7 days.
+    On subsequent runs, syncs incrementally from last_sync_at.
+    """
+    try:
+        integration = Integration.objects.select_related("organization").get(
+            id=integration_id,
+            is_connected=True,
+        )
+    except Integration.DoesNotExist:
+        logger.warning(f"Integration {integration_id} not found or not connected")
+        return
+
+    # Only handle Shopify for now
+    if integration.platform != "shopify":
+        logger.info(f"Skipping non-Shopify integration: {integration.platform}")
+        return
+
+    sync_log = SyncLog.objects.create(
+        organization=integration.organization,
+        integration=integration,
+        sync_type=SyncLog.SyncType.ORDERS,
+        status=SyncLog.Status.IN_PROGRESS,
+    )
+
+    try:
+        client = ShopifyClient(integration)
+
+        # Determine sync start date
+        if integration.last_sync_at:
+            since = integration.last_sync_at
+        else:
+            # First sync: get last 7 days
+            since = timezone.now() - timedelta(days=7)
+
+        # Fetch orders from Shopify
+        orders_data = asyncio.run(client.get_orders(since=since))
+
+        # Track affected dates for metrics recalculation
+        affected_dates = set()
+        records = 0
+
+        for order_data in orders_data:
+            Order.objects.update_or_create(
+                organization=integration.organization,
+                external_id=order_data.external_id,
+                source="shopify",
+                defaults={
+                    "store_id": order_data.store_id,
+                    "order_date": order_data.order_date,
+                    "total_amount": order_data.total_amount,
+                    "currency": order_data.currency,
+                    "status": order_data.status,
+                    "customer_id": order_data.customer_id,
+                    "customer_email": order_data.customer_email,
+                    "is_new_customer": order_data.is_new_customer,
+                    "raw_data": order_data.raw_data,
+                },
+            )
+            records += 1
+            affected_dates.add(order_data.order_date.date())
+
+        # Update last sync timestamp
+        integration.last_sync_at = timezone.now()
+        integration.save(update_fields=["last_sync_at"])
+
+        sync_log.mark_success(records)
+        logger.info(f"Synced {records} orders for {integration}")
+
+        # Trigger metrics recalculation for affected dates
+        for affected_date in affected_dates:
+            calculate_daily_metrics_for_org.delay(
+                integration.organization.id,
+                str(affected_date),
+            )
+
+    except Exception as e:
+        logger.error(f"Failed to sync orders for {integration}: {e}")
+        sync_log.mark_failed(str(e))
+        raise self.retry(exc=e, countdown=60 * 5)
 
 
 @shared_task
@@ -269,7 +366,10 @@ def sync_all_orders():
     )
 
     for integration in integrations:
-        # TODO: Implement order sync for each platform
-        logger.info(f"Would sync orders for {integration}")
+        if integration.platform == "shopify":
+            sync_orders_for_integration.delay(integration.id)
+        else:
+            # TODO: Implement Salla order sync
+            logger.info(f"Order sync not yet implemented for {integration.platform}")
 
     logger.info(f"Triggered order sync for {integrations.count()} integrations")
