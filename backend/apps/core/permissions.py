@@ -68,8 +68,10 @@ class IsOrganizationAdmin(permissions.BasePermission):
             return False
 
         # Check auth info for org_role
+        # Clerk can send role as "admin", "org:admin", or other formats
         auth = request.auth or {}
-        return auth.get("org_role") == "admin"
+        org_role = auth.get("org_role", "")
+        return org_role in ("admin", "org:admin") or "admin" in str(org_role).lower()
 
 
 class AllowPixelTracking(permissions.BasePermission):
