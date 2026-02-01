@@ -18,10 +18,23 @@ def get_fernet() -> Optional[Fernet]:
         return None
 
     try:
-        return Fernet(key.encode() if isinstance(key, str) else key)
+        # First try using the key directly (already base64 format)
+        key_bytes = key.encode() if isinstance(key, str) else key
+        return Fernet(key_bytes)
+    except Exception:
+        pass
+
+    try:
+        # Key might be in hex format (64 hex chars = 32 bytes)
+        # Convert hex to bytes, then base64 encode for Fernet
+        if len(key) == 64:
+            key_bytes = bytes.fromhex(key)
+            key_b64 = base64.urlsafe_b64encode(key_bytes)
+            return Fernet(key_b64)
     except Exception as e:
         logger.error(f"Failed to initialize Fernet: {e}")
-        return None
+
+    return None
 
 
 def encrypt_token(token: str) -> str:
