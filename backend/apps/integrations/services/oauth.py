@@ -113,7 +113,9 @@ class OAuthService:
 
         authorize_url = self.config.authorize_url
         if self.platform == "shopify" and shop:
-            authorize_url = authorize_url.replace("{shop}", shop)
+            # Normalize shop name - strip .myshopify.com if included
+            shop_name = shop.replace(".myshopify.com", "").strip()
+            authorize_url = authorize_url.replace("{shop}", shop_name)
 
         return f"{authorize_url}?{urlencode(params)}"
 
@@ -138,7 +140,9 @@ class OAuthService:
         # Exchange code for tokens
         token_url = self.config.token_url
         if self.platform == "shopify" and shop:
-            token_url = token_url.replace("{shop}", shop)
+            # Normalize shop name - strip .myshopify.com if included
+            shop_name = shop.replace(".myshopify.com", "").strip()
+            token_url = token_url.replace("{shop}", shop_name)
 
         data = {
             "client_id": self.config.client_id,
