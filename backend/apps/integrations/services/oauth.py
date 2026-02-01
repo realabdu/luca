@@ -38,7 +38,12 @@ class OAuthService:
         "shopify": {
             "authorize_url": "https://{shop}.myshopify.com/admin/oauth/authorize",
             "token_url": "https://{shop}.myshopify.com/admin/oauth/access_token",
-            "scopes": ["read_orders", "read_products", "read_customers"],
+            "scopes": [
+                "read_orders",        # Orders from last 60 days
+                "read_all_orders",    # All historical orders (requires Shopify approval)
+                "read_products",
+                "read_customers",
+            ],
         },
         "meta": {
             "authorize_url": "https://www.facebook.com/v18.0/dialog/oauth",
