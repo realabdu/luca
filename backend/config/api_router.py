@@ -18,6 +18,7 @@ from apps.attribution.api.views import (
     AttributionEventViewSet,
 )
 from apps.orders.api.views import OrderViewSet
+from apps.integrations.api.sync_views import SyncTriggerView, SyncStatusView
 
 router = DefaultRouter()
 
@@ -49,6 +50,9 @@ urlpatterns = [
     path("auth/", include("apps.core.urls")),
     # Dashboard
     path("dashboard/", DashboardView.as_view(), name="dashboard"),
+    # Sync
+    path("sync/trigger/", SyncTriggerView.as_view(), name="sync-trigger"),
+    path("sync/status/", SyncStatusView.as_view(), name="sync-status"),
     # Integrations OAuth
     path("integrations/", include("apps.integrations.urls")),
     # Webhooks
