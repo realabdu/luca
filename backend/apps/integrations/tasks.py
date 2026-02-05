@@ -150,6 +150,10 @@ def sync_campaigns_for_integration(self, integration_id: int):
         sync_log.mark_success(records)
         logger.info(f"Synced {records} campaigns for {integration}")
 
+        from apps.ai.tasks import build_rag_documents_for_org
+
+        build_rag_documents_for_org.delay(integration.organization.id)
+
     except Exception as e:
         logger.error(f"Failed to sync campaigns for {integration}: {e}")
         sync_log.mark_failed(str(e))
@@ -368,6 +372,11 @@ def calculate_daily_metrics_for_org(organization_id: int, date_str: str):
     )
 
     logger.info(f"Calculated daily metrics for {organization} on {target_date}")
+
+    if target_date == date.today():
+        from apps.ai.tasks import build_rag_documents_for_org
+
+        build_rag_documents_for_org.delay(organization.id)
 
 
 @shared_task(bind=True, max_retries=3)

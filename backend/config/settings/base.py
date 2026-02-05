@@ -41,6 +41,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # ------------------------------------------------------------------------------
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
+ASGI_APPLICATION = "config.asgi.application"
 
 # APPS
 # ------------------------------------------------------------------------------
@@ -53,12 +54,15 @@ DJANGO_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.admin",
     "django.forms",
+    "django.contrib.postgres",
 ]
 THIRD_PARTY_APPS = [
     "django_celery_beat",
     "rest_framework",
     "corsheaders",
     "drf_spectacular",
+    "channels",
+    "pgvector",
     "health_check",
     "health_check.db",
     "health_check.cache",
@@ -73,6 +77,7 @@ LOCAL_APPS = [
     "apps.analytics",
     "apps.attribution",
     "apps.orders",
+    "apps.ai",
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -212,6 +217,17 @@ LOGGING = {
 REDIS_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 REDIS_SSL = REDIS_URL.startswith("rediss://")
 
+# Channels
+# ------------------------------------------------------------------------------
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [REDIS_URL],
+        },
+    }
+}
+
 # CACHES
 # ------------------------------------------------------------------------------
 CACHES = {
@@ -293,3 +309,10 @@ CLERK_SECRET_KEY = env("CLERK_SECRET_KEY", default="")
 # ------------------------------------------------------------------------------
 # Key for encrypting sensitive data like OAuth tokens
 ENCRYPTION_KEY = env("ENCRYPTION_KEY", default="")
+
+# AI
+# ------------------------------------------------------------------------------
+OPENAI_API_KEY = env("OPENAI_API_KEY", default="")
+OPENAI_CHAT_MODEL = env("OPENAI_CHAT_MODEL", default="gpt-4.1-mini")
+OPENAI_EMBEDDING_MODEL = env("OPENAI_EMBEDDING_MODEL", default="text-embedding-3-small")
+AI_EMBEDDING_DIM = env.int("AI_EMBEDDING_DIM", default=1536)

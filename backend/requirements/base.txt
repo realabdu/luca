@@ -39,6 +39,14 @@ PyJWT==2.10.0
 cryptography==44.0.0
 httpx==0.28.1
 
+# AI + Vector Search
+openai==1.63.2
+pgvector==0.2.4
+
+# WebSockets
+channels==4.1.0
+channels-redis==4.2.0
+
 # Database
 psycopg[binary]==3.2.4
 

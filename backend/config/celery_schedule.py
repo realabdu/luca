@@ -24,4 +24,9 @@ CELERY_BEAT_SCHEDULE = {
         "task": "apps.integrations.tasks.sync_all_orders",
         "schedule": crontab(minute="*/15"),
     },
+    # Build RAG documents nightly
+    "build-rag-documents-nightly": {
+        "task": "apps.ai.tasks.build_rag_documents_nightly",
+        "schedule": crontab(minute="30", hour="2"),
+    },
 }

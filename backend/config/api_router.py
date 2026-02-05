@@ -62,4 +62,6 @@ urlpatterns = [
     path("webhooks/clerk/", include("apps.accounts.webhook_urls")),
     # Onboarding
     path("onboarding/", include("apps.accounts.onboarding_urls")),
+    # AI
+    path("ai/", include("apps.ai.urls")),
 ]

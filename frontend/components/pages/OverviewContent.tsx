@@ -7,6 +7,7 @@ import { PageLoading, NoOrganization } from '@/components/ui';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';
 import { MetricsGrid } from '@/components/dashboard/MetricsGrid';
 import { ChartsSection } from '@/components/dashboard/ChartsSection';
+import InsightsChatPanel from '@/components/dashboard/InsightsChatPanel';
 import { MetricCardSkeleton } from '@/components/dashboard/MetricCard';
 import EmptyDashboard from '@/components/dashboard/EmptyDashboard';
 import { getDefaultDateRange, type DateRange } from '@/components/dashboard/DateRangeSelector';
@@ -233,14 +234,22 @@ export default function OverviewContent() {
         </div>
       )}
 
-      <MetricsGrid pins={pins} customMetrics={customMetrics} isLoading={loading} />
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-6">
+        <div className="space-y-6">
+          <MetricsGrid pins={pins} customMetrics={customMetrics} isLoading={loading} />
 
-      <ChartsSection
-        performance={dashboardData?.performance || []}
-        platformSpend={dashboardData?.platformSpend || []}
-        dateRange={dateRange}
-        isLoading={loading}
-      />
+          <ChartsSection
+            performance={dashboardData?.performance || []}
+            platformSpend={dashboardData?.platformSpend || []}
+            dateRange={dateRange}
+            isLoading={loading}
+          />
+        </div>
+
+        <div className="xl:sticky xl:top-24 h-fit">
+          <InsightsChatPanel dateRange={dateRange} />
+        </div>
+      </div>
 
       {dashboardData && (
         <div className="text-xs text-text-muted text-center py-4">
