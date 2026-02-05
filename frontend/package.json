@@ -9,7 +9,7 @@
     "lint": "eslint",
     "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "deploy": "opennextjs-cloudflare build && opennextjs-cloudflare deploy",
-    "cf-build": "opennextjs-cloudflare build"
+    "cf-build": "opennextjs-cloudflare build && cp .open-next/worker.js .open-next/assets/_worker.js"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.47.0",
