@@ -7,7 +7,6 @@ import { ClerkApiProvider } from "@/components/ClerkApiProvider";
 export const dynamic = "force-dynamic";
 
 // Required for Cloudflare Pages deployment
-export const runtime = "edge";
 
 // Fonts loaded at build time and self-hosted by Next.js (no FOUT)
 const inter = Inter({
