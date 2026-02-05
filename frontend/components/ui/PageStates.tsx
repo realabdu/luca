@@ -1,6 +1,6 @@
 'use client';
 
-import type { ReactNode } from 'react';
+import type { ReactElement, ReactNode } from 'react';
 
 interface PageLoadingProps {
   maxWidth?: string;
@@ -9,7 +9,7 @@ interface PageLoadingProps {
 /**
  * Full-page loading spinner for auth/data loading states.
  */
-export function PageLoading({ maxWidth = 'max-w-[1600px]' }: PageLoadingProps): JSX.Element {
+export function PageLoading({ maxWidth = 'max-w-[1600px]' }: PageLoadingProps): ReactElement {
   return (
     <div className={`p-6 lg:p-8 ${maxWidth} mx-auto`}>
       <div className="flex items-center justify-center min-h-[400px]">
@@ -33,7 +33,7 @@ interface NoOrganizationProps {
 export function NoOrganization({
   maxWidth = 'max-w-[1600px]',
   message = 'Please select or create an organization to continue.',
-}: NoOrganizationProps): JSX.Element {
+}: NoOrganizationProps): ReactElement {
   return (
     <div className={`p-6 lg:p-8 ${maxWidth} mx-auto`}>
       <div className="flex flex-col items-center justify-center min-h-[400px] text-center">

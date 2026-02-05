@@ -1,5 +1,6 @@
 'use client';
 
+import type { ReactElement, ReactNode } from 'react';
 import { PlatformIcon, PLATFORM_COLORS, type PlatformIconName } from '@/components/icons/PlatformIcons';
 import type { Integration, IntegrationPlatform } from '@/features/integrations/domain/types';
 
@@ -187,7 +188,7 @@ function CompactCard({
   );
 }
 
-export function ComingSoonCard({ name }: { name: string }): JSX.Element {
+export function ComingSoonCard({ name }: { name: string }): ReactElement {
   return (
     <div className="group flex flex-col p-6 border border-dashed border-border-light bg-slate-50/50">
       <div className="flex items-center gap-4 mb-4 opacity-50">
@@ -219,7 +220,7 @@ interface StatusIndicatorProps {
   isConnected?: boolean;
 }
 
-function StatusIndicator({ isLoading, isConnected }: StatusIndicatorProps): JSX.Element | null {
+function StatusIndicator({ isLoading, isConnected }: StatusIndicatorProps): ReactElement | null {
   if (isLoading) {
     return <span className="w-16 h-6 bg-slate-100 animate-pulse" />;
   }
@@ -248,7 +249,7 @@ function CardDescription({
   isConnected,
   accountName,
   description,
-}: CardDescriptionProps): JSX.Element | string {
+}: CardDescriptionProps): ReactElement | string {
   if (isLoading) {
     return <span className="block w-48 h-4 bg-slate-100 animate-pulse" />;
   }
