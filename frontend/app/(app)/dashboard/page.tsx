@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import { MetricCardSkeleton } from '@/components/dashboard/MetricCard';
 
+export const runtime = 'edge';
+
 // Dynamically import the content with no SSR to avoid Convex provider issues during static generation
 const OverviewContent = dynamic(() => import('@/components/pages/OverviewContent'), {
   ssr: false,

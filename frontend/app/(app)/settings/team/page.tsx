@@ -3,6 +3,8 @@
 import { OrganizationProfile, useAuth, useOrganization } from "@clerk/nextjs";
 import { useOrganizationMembersQuery, useCurrentOrganizationQuery } from "@/features/organization/hooks/use-organization-queries";
 
+export const runtime = 'edge';
+
 export default function TeamSettingsPage() {
   const { isLoaded, isSignedIn } = useAuth();
   const { organization: clerkOrg, isLoaded: isOrgLoaded } = useOrganization();

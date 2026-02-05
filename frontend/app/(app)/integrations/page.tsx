@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+export const runtime = 'edge';
+
 const IntegrationsContent = dynamic(
   () => import("@/components/pages/IntegrationsContent"),
   {

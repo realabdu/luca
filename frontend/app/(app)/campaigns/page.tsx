@@ -2,6 +2,8 @@
 
 import dynamic from 'next/dynamic';
 
+export const runtime = 'edge';
+
 // Dynamically import the content with no SSR to avoid Convex provider issues during static generation
 const CampaignsContent = dynamic(() => import('@/components/pages/CampaignsContent'), {
   ssr: false,

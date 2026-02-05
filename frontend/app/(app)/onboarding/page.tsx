@@ -2,6 +2,8 @@
 
 import dynamic from "next/dynamic";
 
+export const runtime = 'edge';
+
 // Dynamically import the OnboardingWizard to avoid SSR issues with Convex
 const OnboardingWizard = dynamic(
   () => import("@/components/onboarding/OnboardingWizard"),
