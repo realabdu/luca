@@ -5,6 +5,9 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Required for Cloudflare Pages compatibility
+  skipTrailingSlashRedirect: true,
+  skipMiddlewareUrlNormalize: true,
 };
 
 export default nextConfig;
