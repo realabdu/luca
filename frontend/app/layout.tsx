@@ -6,6 +6,9 @@ import { ClerkApiProvider } from "@/components/ClerkApiProvider";
 // Prevent static generation - app requires Clerk auth at runtime
 export const dynamic = "force-dynamic";
 
+// Required for Cloudflare Pages deployment
+export const runtime = "edge";
+
 // Fonts loaded at build time and self-hosted by Next.js (no FOUT)
 const inter = Inter({
   variable: "--font-inter",
